@@ -14,6 +14,7 @@ export default function RootLayout({ children }) {
             <Link href="/bilhetes">Bilhetes</Link>
             <Link href="/importar">Importar JSON</Link>
             <Link href="/config">Config</Link>
+            <Link href="/login">Entrar</Link>
           </nav>
           {children}
         </main>
