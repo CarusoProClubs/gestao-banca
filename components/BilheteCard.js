@@ -17,7 +17,7 @@ function alterarBilhete(bilhete, campo, valor) {
   return { ...atualizado, payload: { ...(atualizado.payload || {}), [campo]: valor } };
 }
 
-export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, confirmarLabel = "Confirmar" }) {
+export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, onClose, confirmarLabel = "Confirmar" }) {
   if (!bilhete) return null;
   const pernas = bilhete.pernas || bilhete.payload?.pernas || [];
   const lucro = lucroBilhete(bilhete);
@@ -106,6 +106,11 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
         {onConfirm && <button className="green" onClick={onConfirm}>{confirmarLabel}</button>}{" "}
         {onClose && <button onClick={onClose}>Fechar</button>}
       </p>
+      {onDelete && (
+        <p style={{ marginTop: 12 }}>
+          <button className="red" onClick={onDelete}>🗑️ Excluir bilhete</button>
+        </p>
+      )}
     </div>
   );
 }
