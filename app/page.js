@@ -5,9 +5,15 @@ import { getSupabase } from "../lib/supabase";
 import { exposicaoPendente, lucroBilhete } from "../lib/types";
 import { filtrarBilhetes } from "../lib/filtros";
 import { limitesSalario, orcamentoDoPeriodo, termometroFamiliar } from "../lib/periodo";
+import { nomeMercado, nomeTipo } from "../lib/mercados";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function pernasDoBilhete(ticket) {
+  const lista = ticket?.payload?.pernas || [];
+  return Array.isArray(lista) ? lista : [];
 }
 
 export default function Page() {
@@ -17,6 +23,7 @@ export default function Page() {
     periodicidade: "mensal",
   });
   const [tickets, setTickets] = useState([]);
+  const [aberto, setAberto] = useState(null);
   const [filtros, setFiltros] = useState({
     periodo: "salario",
     de: "",
@@ -58,6 +65,7 @@ export default function Page() {
     const lucroNovo = lucroBilhete({ ...ticket, status_usuario });
     await supabase.from("tickets").update({ status_usuario, lucro: lucroNovo }).eq("id", ticket.id);
     load();
+    setAberto((atual) => (atual && atual.id === ticket.id ? { ...atual, status_usuario, lucro: lucroNovo } : atual));
   }
 
   return (
@@ -173,7 +181,7 @@ export default function Page() {
               <tr><td colSpan={8}>Nenhuma aposta neste filtro.</td></tr>
             ) : (
               lista.map((ticket) => (
-                <tr key={ticket.id}>
+                <tr key={ticket.id} className="clickable" onClick={() => setAberto(ticket)}>
                   <td>{(ticket.data_hora || ticket.created_at || "").slice(0, 10)}</td>
                   <td>{ticket.casa ?? "—"}</td>
                   <td>{ticket.titulo ?? ticket.jogo ?? "—"}</td>
@@ -181,7 +189,7 @@ export default function Page() {
                   <td>{ticket.odd_bilhete ?? "—"}</td>
                   <td>{ticket.status_usuario}</td>
                   <td className={lucroBilhete(ticket) >= 0 ? "ok" : "bad"}>{money(lucroBilhete(ticket))}</td>
-                  <td>
+                  <td onClick={(event) => event.stopPropagation()}>
                     <button className="green" onClick={() => setStatus(ticket, "green")}>Green</button>{" "}
                     <button className="red" onClick={() => setStatus(ticket, "red")}>Red</button>
                   </td>
@@ -191,6 +199,33 @@ export default function Page() {
           </tbody>
         </table>
       </section>
+
+      {aberto && (
+        <div className="overlay" onClick={() => setAberto(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <p className="muted">{aberto.casa} · {nomeTipo(aberto.tipo, aberto.formato)} · ID {aberto.id_casa ?? "—"}</p>
+            <h3>{aberto.titulo || aberto.jogo || "Bilhete"}</h3>
+            <p>{money(aberto.valor_apostado)} · odd {aberto.odd_bilhete ?? "—"} · {aberto.status_usuario}</p>
+            <p className={lucroBilhete(aberto) >= 0 ? "ok" : "bad"}>P/L {money(lucroBilhete(aberto))}</p>
+            {pernasDoBilhete(aberto).length === 0 ? (
+              <p className="muted">Sem pernas salvas neste bilhete.</p>
+            ) : (
+              pernasDoBilhete(aberto).map((perna) => (
+                <div className="leg" key={perna.ordem || perna.selecao}>
+                  <strong>{perna.selecao || "Palpite"}</strong>
+                  <p className="muted">{perna.jogo || aberto.jogo || ""}</p>
+                  <p>{nomeMercado(perna.mercado)} {perna.odd_perna ? `· ${perna.odd_perna}` : ""}</p>
+                </div>
+              ))
+            )}
+            <p>
+              <button className="green" onClick={() => setStatus(aberto, "green")}>Green</button>{" "}
+              <button className="red" onClick={() => setStatus(aberto, "red")}>Red</button>{" "}
+              <button onClick={() => setAberto(null)}>Fechar</button>
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
