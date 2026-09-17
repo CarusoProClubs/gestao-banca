@@ -1,29 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase } from "../../../lib/supabase";
-import { NIVEIS, faixaPorQuantidade, inicioSemana } from "../../../lib/alavancagem";
+import { NIVEIS, inicioSemana } from "../../../lib/alavancagem";
 import { publicarAviso } from "../../../lib/notificacoes";
-
-const VAZIO = {
-  data_evento: "",
-  horario: "",
-  esporte: "",
-  evento: "",
-  mercado: "",
-  odd_sugerida: "",
-  nivel: "segura",
-  motivo: "",
-};
+import { limitarX, parseTxtSemana } from "../../../lib/txt-semana";
 
 export default function SemanaAdminPage() {
   const semana = inicioSemana();
   const [admin, setAdmin] = useState(false);
   const [plano, setPlano] = useState(null);
   const [eventos, setEventos] = useState([]);
-  const [form, setForm] = useState(VAZIO);
-  const [nota, setNota] = useState("");
+  const [xs, setXs] = useState({ segura: 4, media: 7, alta: 12 });
+  const [preview, setPreview] = useState(null);
+  const [arquivoNome, setArquivoNome] = useState("");
   const [msg, setMsg] = useState("");
 
   async function load() {
@@ -34,8 +25,15 @@ export default function SemanaAdminPage() {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", auth.user.id).single();
     setAdmin(profile?.role === "admin");
     const { data: plans } = await supabase.from("weekly_plans").select("*").eq("inicio", semana).limit(1);
-    setPlano(plans?.[0] || null);
-    setNota(plans?.[0]?.nota || "");
+    const plan = plans?.[0] || null;
+    setPlano(plan);
+    if (plan) {
+      setXs({
+        segura: Number(plan.x_baixa || 4),
+        media: Number(plan.x_media || 7),
+        alta: Number(plan.x_alta || 12),
+      });
+    }
     const { data: evs } = await supabase.from("weekly_events").select("*").eq("inicio", semana).order("data_evento", { ascending: true });
     setEventos(evs ?? []);
   }
@@ -44,64 +42,74 @@ export default function SemanaAdminPage() {
     load();
   }, []);
 
-  const ativos = eventos.filter((ev) => ev.status !== "cancelado");
-  const faixa = useMemo(() => faixaPorQuantidade(ativos.length), [ativos.length]);
+  function lerArquivo(file) {
+    if (!file) return;
+    setArquivoNome(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = parseTxtSemana(String(reader.result || ""), semana);
+      setPreview(parsed);
+      setXs({
+        segura: parsed.x_baixa,
+        media: parsed.x_media,
+        alta: parsed.x_alta,
+      });
+      setMsg(parsed.erros.length ? `Li o arquivo, mas tem ${parsed.erros.length} linha(s) com problema.` : `Arquivo lido: ${parsed.eventos.length} evento(s).`);
+    };
+    reader.readAsText(file, "utf-8");
+  }
 
-  async function publicarPlano() {
+  async function gravarEPublicar() {
     const supabase = getSupabase();
+    const lista = preview?.eventos?.length ? preview.eventos : null;
     const payload = {
       inicio: semana,
-      nivel: faixa.id,
-      multiplo_min: faixa.multiploMin,
-      multiplo_max: faixa.multiploMax,
-      qtd_eventos: ativos.length,
+      nivel: "triplo",
+      multiplo_min: xs.segura,
+      multiplo_max: xs.alta,
+      qtd_eventos: (lista || eventos.filter((e) => e.status !== "cancelado")).length,
       status: "publicado",
-      nota,
+      nota: `X|${xs.segura}|${xs.media}|${xs.alta}`,
+      x_baixa: xs.segura,
+      x_media: xs.media,
+      x_alta: xs.alta,
       published_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    const { error } = plano
+    let { error } = plano
       ? await supabase.from("weekly_plans").update(payload).eq("id", plano.id)
       : await supabase.from("weekly_plans").insert(payload);
+    if (error && /x_baixa|column/i.test(error.message)) {
+      const { x_baixa, x_media, x_alta, ...semColuna } = payload;
+      const again = plano
+        ? await supabase.from("weekly_plans").update(semColuna).eq("id", plano.id)
+        : await supabase.from("weekly_plans").insert(semColuna);
+      error = again.error;
+    }
     if (error) return setMsg(error.message);
+
+    if (lista) {
+      await supabase.from("weekly_events").delete().eq("inicio", semana);
+      const rows = lista.map((ev) => ({ ...ev, inicio: semana }));
+      const ins = await supabase.from("weekly_events").insert(rows);
+      if (ins.error) return setMsg(ins.error.message);
+    }
+
     await publicarAviso(supabase, {
       tipo: "tabela_semana",
       titulo: "Tabela da semana disponível",
-      corpo: `${ativos.length} evento(s) · ${faixa.nome} · meta ${faixa.multiploMin}x a ${faixa.multiploMax}x. Informe só o valor que vai investir.`,
+      corpo: `Baixo ${xs.segura}x · Médio ${xs.media}x · Alto ${xs.alta}x. Veja os eventos e informe o valor.`,
       link: "/alavancagem",
       inicio_semana: semana,
     });
+    setPreview(null);
     setMsg("Tabela publicada e aviso enviado no app.");
-    load();
-  }
-
-  async function adicionar() {
-    if (!form.evento.trim()) return setMsg("Preencha o evento.");
-    const supabase = getSupabase();
-    const { error } = await supabase.from("weekly_events").insert({
-      inicio: semana,
-      data_evento: form.data_evento || null,
-      horario: form.horario || null,
-      esporte: form.esporte || null,
-      evento: form.evento,
-      mercado: form.mercado || null,
-      odd_sugerida: form.odd_sugerida ? Number(form.odd_sugerida) : null,
-      nivel: form.nivel,
-      motivo: form.motivo || null,
-      status: "ativo",
-    });
-    if (error) return setMsg(error.message);
-    setForm(VAZIO);
-    setMsg("Evento incluído. Publique de novo para travar a faixa e avisar os clientes.");
     load();
   }
 
   async function alterar(ev, patch, avisar) {
     const supabase = getSupabase();
-    const { error } = await supabase
-      .from("weekly_events")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", ev.id);
+    const { error } = await supabase.from("weekly_events").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", ev.id);
     if (error) return setMsg(error.message);
     if (avisar) {
       await publicarAviso(supabase, {
@@ -129,83 +137,63 @@ export default function SemanaAdminPage() {
   return (
     <section>
       <section className="card">
-        <h2>Publicar tabela da semana</h2>
-        <p>Semana de {semana.split("-").reverse().join("/")} · {ativos.length} evento(s) ativo(s).</p>
+        <h2>X desta semana (os três níveis entram juntos)</h2>
+        <p>Semana de {semana.split("-").reverse().join("/")}.</p>
+        <p className="muted">Baixo só aceita 3 a 5. Médio 6 a 9. Alto 10 a 15. O número do meio é o X desta semana.</p>
+        <div className="filters">
+          {Object.values(NIVEIS).map((n) => (
+            <div key={n.id}>
+              <p>{n.nome} ({n.multiploMin}x–{n.multiploMax}x)</p>
+              <input
+                value={xs[n.id]}
+                onChange={(e) => setXs({ ...xs, [n.id]: limitarX(n.id, e.target.value, xs[n.id]) })}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Enviar arquivo TXT da semana</h2>
+        <p>Um arquivo só, com os três níveis. <a href="/modelo-semana.txt" download>Baixar modelo</a></p>
+        <input type="file" accept=".txt,text/plain" onChange={(e) => lerArquivo(e.target.files?.[0])} />
+        {arquivoNome && <p className="muted">Arquivo: {arquivoNome}</p>}
+        {preview && (
+          <div>
+            <p>{preview.eventos.length} evento(s) lidos · baixo {preview.x_baixa}x · médio {preview.x_media}x · alto {preview.x_alta}x</p>
+            {preview.erros.map((err) => <p key={err} className="bad">{err}</p>)}
+            {preview.eventos.slice(0, 8).map((ev, i) => (
+              <p key={i} className="muted">{NIVEIS[ev.nivel]?.nome} · {ev.data_evento || "sem data"} · {ev.evento} · {ev.mercado} · {ev.odd_sugerida || "—"}</p>
+            ))}
+          </div>
+        )}
         <p>
-          Faixa calculada pela quantidade: <strong>{faixa.nome}</strong> · {faixa.multiploMin}x a {faixa.multiploMax}x.
-          O cliente não escolhe isso.
+          <button className="green" onClick={gravarEPublicar}>Publicar tabela e avisar no app</button>
         </p>
-        <p>Nota interna (opcional)</p>
-        <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)} />
-        <p>
-          <button className="green" onClick={publicarPlano}>Publicar tabela e avisar no app</button>
-        </p>
-        <p className="muted">Domingo: monte a lista e publique. Durante a semana: altere um evento e o aviso sai na hora.</p>
         <p>{msg}</p>
       </section>
 
       <section className="card">
-        <h2>Incluir evento</h2>
-        <div className="filters">
-          <div>
-            <p>Data</p>
-            <input type="date" value={form.data_evento} onChange={(e) => setForm({ ...form, data_evento: e.target.value })} />
-          </div>
-          <div>
-            <p>Horário</p>
-            <input value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} placeholder="16:00" />
-          </div>
-          <div>
-            <p>Esporte</p>
-            <input value={form.esporte} onChange={(e) => setForm({ ...form, esporte: e.target.value })} />
-          </div>
-        </div>
-        <p>Evento</p>
-        <input value={form.evento} onChange={(e) => setForm({ ...form, evento: e.target.value })} placeholder="Time A x Time B" />
-        <p>Mercado</p>
-        <input value={form.mercado} onChange={(e) => setForm({ ...form, mercado: e.target.value })} />
-        <p>Odd</p>
-        <input value={form.odd_sugerida} onChange={(e) => setForm({ ...form, odd_sugerida: e.target.value })} />
-        <p>Nível desta linha</p>
-        <select value={form.nivel} onChange={(e) => setForm({ ...form, nivel: e.target.value })}>
-          {Object.values(NIVEIS).map((n) => (
-            <option key={n.id} value={n.id}>{n.nome}</option>
-          ))}
-        </select>
-        <p>Por que entra</p>
-        <textarea rows={3} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} />
-        <p><button onClick={adicionar}>Adicionar na grade</button></p>
-      </section>
-
-      <section className="card">
         <h2>Grade atual</h2>
+        {eventos.length === 0 && <p className="muted">Ainda vazia. Envie o TXT e publique.</p>}
         {eventos.map((ev) => (
           <div className="leg" key={ev.id}>
-            <strong>{ev.evento}</strong>
+            <strong>{NIVEIS[ev.nivel]?.nome || ev.nivel} · {ev.evento}</strong>
             <p className="muted">
-              {[ev.data_evento, ev.horario, ev.esporte, ev.mercado, ev.odd_sugerida].filter(Boolean).join(" · ")} · {ev.status}
+              {[ev.data_evento, ev.horario, ev.esporte, ev.mercado, ev.odd_sugerida, ev.status].filter(Boolean).join(" · ")}
             </p>
             {ev.motivo_alteracao && <p className="muted">Alteração: {ev.motivo_alteracao}</p>}
             <p>
-              <button
-                onClick={() => {
-                  const motivo = window.prompt("O que mudou? (sai no aviso)", ev.motivo_alteracao || "");
-                  if (motivo == null) return;
-                  alterar(ev, { status: "alterado", motivo_alteracao: motivo }, true);
-                }}
-              >
-                Registrar alteração e avisar
-              </button>{" "}
-              <button
-                className="red"
-                onClick={() => {
-                  const motivo = window.prompt("Por que sai da tabela?", "Desfalque / jogo morto");
-                  if (motivo == null) return;
-                  alterar(ev, { status: "cancelado", motivo_alteracao: motivo }, true);
-                }}
-              >
-                Cancelar e avisar
-              </button>
+              <button onClick={() => {
+                const motivo = window.prompt("O que mudou? (sai no aviso)", ev.motivo_alteracao || "");
+                if (motivo == null) return;
+                alterar(ev, { status: "alterado", motivo_alteracao: motivo }, true);
+              }}>Registrar alteração e avisar</button>{" "}
+              <button className="red" onClick={() => {
+                const motivo = window.prompt("Por que sai da tabela?", "Mudança no jogo");
+                if (motivo == null) return;
+                alterar(ev, { status: "cancelado", motivo_alteracao: motivo }, true);
+              }}>Cancelar e avisar</button>
             </p>
           </div>
         ))}
