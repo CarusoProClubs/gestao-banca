@@ -2,26 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { getSupabase } from "../../../lib/supabase";
-import { publicarAviso } from "../../../lib/notificacoes";
-import { inicioSemana } from "../../../lib/alavancagem";
 
-export default function PublicarPage() {
-  const hoje = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({
-    data: hoje,
-    titulo: "",
-    evento: "",
-    mercado: "",
-    odd_sugerida: "",
-    nivel: "media",
-    motivo: "",
-  });
+const VAZIO = {
+  data: new Date().toISOString().slice(0, 10),
+  esporte: "futebol",
+  liga: "",
+  evento: "",
+  hora: "",
+  mercado: "",
+  odd_sugerida: "",
+  motivo: "",
+};
+
+export default function PublicarBoletimPage() {
+  const [form, setForm] = useState(VAZIO);
   const [msg, setMsg] = useState("");
   const [lista, setLista] = useState([]);
 
   async function load() {
     const supabase = getSupabase();
-    const { data } = await supabase.from("daily_entries").select("*").eq("data", form.data).order("created_at", { ascending: false });
+    const { data } = await supabase.from("daily_entries").select("*").eq("data", form.data).order("created_at", { ascending: true });
     setLista(data ?? []);
   }
 
@@ -33,55 +33,59 @@ export default function PublicarPage() {
     const supabase = getSupabase();
     const { error } = await supabase.from("daily_entries").insert({
       data: form.data,
-      titulo: form.titulo,
+      titulo: form.esporte,
       evento: form.evento,
       mercado: form.mercado,
-      odd_sugerida: form.odd_sugerida ? Number(form.odd_sugerida) : null,
-      nivel: form.nivel,
-      motivo: form.motivo,
+      odd_sugerida: form.odd_sugerida ? Number(String(form.odd_sugerida).replace(",", ".")) : null,
+      nivel: "boletim",
+      motivo: [form.esporte, form.liga, form.hora].filter(Boolean).join(" · ") + (form.motivo ? ` — ${form.motivo}` : ""),
+      esporte: form.esporte,
+      liga: form.liga,
+      hora: form.hora,
     });
-    if (error) return setMsg(error.message);
-    await publicarAviso(supabase, {
-      tipo: "alteracao",
-      titulo: "Atualização no boletim do dia",
-      corpo: `${form.titulo || form.evento || "Nova entrada"} · veja o boletim.`,
-      link: "/boletim",
-      inicio_semana: inicioSemana(),
-    });
-    setMsg("Publicado no boletim e aviso enviado no app.");
-    setForm({ ...form, titulo: "", evento: "", mercado: "", odd_sugerida: "", motivo: "" });
+    setMsg(error ? error.message : "Jogo publicado no boletim.");
+    if (!error) {
+      setForm({ ...form, evento: "", mercado: "", odd_sugerida: "", motivo: "", hora: "" });
+      load();
+    }
+  }
+
+  async function apagar(id) {
+    const supabase = getSupabase();
+    await supabase.from("daily_entries").delete().eq("id", id);
     load();
   }
 
   return (
     <section className="card">
-      <h2>Publicar boletim</h2>
-      <p>Análise do dia. Se mudar a grade da semana, use também Alavancagem → tabela da semana.</p>
+      <h2>Montar boletim do dia</h2>
+      <p>Um jogo de cada vez. Pode ser futebol, basquete, NFL, tênis... não precisa estar na alavancagem.</p>
       <p>Data</p>
       <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
-      <p>Título</p>
-      <input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
-      <p>Evento (ex.: Flamengo x Palmeiras)</p>
-      <input value={form.evento} onChange={(e) => setForm({ ...form, evento: e.target.value })} />
+      <p>Esporte</p>
+      <input value={form.esporte} onChange={(e) => setForm({ ...form, esporte: e.target.value })} placeholder="futebol, basquete, NFL..." />
+      <p>Liga</p>
+      <input value={form.liga} onChange={(e) => setForm({ ...form, liga: e.target.value })} placeholder="Premier League, NBA..." />
+      <p>Jogo</p>
+      <input value={form.evento} onChange={(e) => setForm({ ...form, evento: e.target.value })} placeholder="Flamengo x Palmeiras" />
+      <p>Hora</p>
+      <input value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} placeholder="21:30" />
       <p>Mercado</p>
-      <input value={form.mercado} onChange={(e) => setForm({ ...form, mercado: e.target.value })} />
+      <input value={form.mercado} onChange={(e) => setForm({ ...form, mercado: e.target.value })} placeholder="Vencedor da partida Flamengo" />
       <p>Odd</p>
       <input value={form.odd_sugerida} onChange={(e) => setForm({ ...form, odd_sugerida: e.target.value })} />
-      <p>Nível</p>
-      <select value={form.nivel} onChange={(e) => setForm({ ...form, nivel: e.target.value })}>
-        <option value="segura">Segura</option>
-        <option value="media">Média</option>
-        <option value="alta">Alto risco</option>
-      </select>
-      <p>Por que essa entrada</p>
-      <textarea rows={4} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} />
+      <p>Por que entra hoje</p>
+      <textarea rows={3} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} />
       <p>
-        <button onClick={salvar}>Publicar e avisar</button>
+        <button className="green" onClick={salvar}>Adicionar ao boletim</button>
       </p>
       <p>{msg}</p>
-      <h2>Já no ar neste dia</h2>
+      <h2>Já no boletim deste dia</h2>
       {lista.map((item) => (
-        <p key={item.id}>{item.titulo} · {item.evento}</p>
+        <p key={item.id}>
+          {item.evento} · {item.mercado}{" "}
+          <button className="red" onClick={() => apagar(item.id)}>Apagar</button>
+        </p>
       ))}
     </section>
   );
