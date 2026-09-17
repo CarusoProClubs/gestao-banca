@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { inicioSemana } from "../../lib/alavancagem";
 import { parseAlavancagemTxt } from "../../lib/alavancagem-txt";
@@ -27,6 +27,7 @@ function lerNiveis(valor) {
 
 export default function AlavancagemPage() {
   const semana = inicioSemana();
+  const arquivoRef = useRef(null);
   const [tickets, setTickets] = useState([]);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
   const [niveis, setNiveis] = useState([]);
@@ -98,9 +99,12 @@ export default function AlavancagemPage() {
     <section>
       <section className="card">
         <h2>TXT da semana</h2>
-        <p>Envie o arquivo com jogos e META de cada nível.</p>
+        <p>Clique no botão e escolha o arquivo .txt com os jogos.</p>
+        <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
         <p>
-          <input type="file" accept=".txt,text/plain" onChange={enviarTxt} />
+          <button className="green" onClick={() => arquivoRef.current?.click()}>
+            Enviar TXT
+          </button>
         </p>
         <p>{msg}</p>
       </section>
