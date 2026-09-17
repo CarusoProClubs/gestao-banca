@@ -23,9 +23,9 @@ export default function ImportarPage() {
     setBilhete(null);
     try {
       const Tesseract = (await import("tesseract.js")).default;
-      const result = await Tesseract.recognize(file, "eng");
+      const result = await Tesseract.recognize(file, "por+eng");
       setBilhete(fecharBilhete(parseOcrText(result.data.text || "")));
-      setMsg("Marque cada palpite e confirme o bilhete.");
+      setMsg("Confira os dados, corrija o que estiver errado e marque o resultado de cada palpite.");
     } catch (error) {
       setMsg(error instanceof Error ? error.message : "Falha ao ler o print");
     } finally {
@@ -34,13 +34,16 @@ export default function ImportarPage() {
   }
 
   async function confirmar() {
+    if (!bilhete?.casa) return setMsg("Selecione a casa de aposta antes de confirmar.");
     const supabase = getSupabase();
     const { data: sessionData } = await supabase.auth.getUser();
+    if (!sessionData.user) return setMsg("Sua sessão expirou. Entre novamente em /login.");
     const { data: profile } = await supabase
       .from("profiles")
       .select("organization_id")
       .eq("id", sessionData.user.id)
       .single();
+    if (!profile?.organization_id) return setMsg("Perfil sem organização vinculada.");
     const result = await salvarBilhete(supabase, profile, sessionData.user.id, bilhete);
     if (result.error) return setMsg(result.error.message);
     setMsg("Bilhete confirmado. Veja no Painel.");
@@ -50,19 +53,10 @@ export default function ImportarPage() {
   return (
     <section className="card">
       <h2>Enviar print</h2>
-      <p>Sobe a foto. O card mostra os palpites. Em múltipla, um red perde o bilhete inteiro.</p>
-      <p>
-        <input type="file" accept="image/*" onChange={enviarPrint} disabled={lendo} />
-      </p>
+      <p>O leitor tenta identificar a casa, os dados e os palpites. Nada é salvo sem sua confirmação.</p>
+      <p><input type="file" accept="image/*" onChange={enviarPrint} disabled={lendo} /></p>
       {lendo && <p>Lendo o print... pode levar alguns segundos.</p>}
-      {bilhete && (
-        <BilheteCard
-          bilhete={bilhete}
-          onChange={setBilhete}
-          onConfirm={confirmar}
-          confirmarLabel="Confirmar bilhete"
-        />
-      )}
+      {bilhete && <BilheteCard bilhete={bilhete} onChange={setBilhete} onConfirm={confirmar} confirmarLabel="Confirmar bilhete" />}
       <p>{msg}</p>
     </section>
   );
