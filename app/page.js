@@ -5,15 +5,18 @@ import { getSupabase } from "../lib/supabase";
 import { exposicaoPendente, lucroBilhete } from "../lib/types";
 import { filtrarBilhetes } from "../lib/filtros";
 import { limitesSalario, orcamentoDoPeriodo, termometroFamiliar } from "../lib/periodo";
-import { nomeMercado, nomeTipo } from "../lib/mercados";
+import { fecharBilhete } from "../lib/resultado";
+import BilheteCard from "../components/BilheteCard";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function pernasDoBilhete(ticket) {
-  const lista = ticket?.payload?.pernas || [];
-  return Array.isArray(lista) ? lista : [];
+function comPernas(ticket) {
+  return fecharBilhete({
+    ...ticket,
+    pernas: ticket.pernas || ticket.payload?.pernas || [],
+  });
 }
 
 export default function Page() {
@@ -60,12 +63,19 @@ export default function Page() {
   const termo = termometroFamiliar({ lucro, pendente, orcamento });
   const casas = [...new Set(tickets.map((t) => t.casa).filter(Boolean))];
 
-  async function setStatus(ticket, status_usuario) {
+  async function gravar(ticket) {
     const supabase = getSupabase();
-    const lucroNovo = lucroBilhete({ ...ticket, status_usuario });
-    await supabase.from("tickets").update({ status_usuario, lucro: lucroNovo }).eq("id", ticket.id);
+    const fechado = comPernas(ticket);
+    await supabase
+      .from("tickets")
+      .update({
+        status_usuario: fechado.status_usuario,
+        lucro: fechado.lucro,
+        payload: fechado.payload,
+      })
+      .eq("id", ticket.id);
+    setAberto({ ...fechado, id: ticket.id });
     load();
-    setAberto((atual) => (atual && atual.id === ticket.id ? { ...atual, status_usuario, lucro: lucroNovo } : atual));
   }
 
   return (
@@ -172,16 +182,15 @@ export default function Page() {
               <th>Valor</th>
               <th>Odd</th>
               <th>Status</th>
-              <th>P/L</th>
-              <th></th>
+              <th>Saldo</th>
             </tr>
           </thead>
           <tbody>
             {lista.length === 0 ? (
-              <tr><td colSpan={8}>Nenhuma aposta neste filtro.</td></tr>
+              <tr><td colSpan={7}>Nenhuma aposta neste filtro.</td></tr>
             ) : (
               lista.map((ticket) => (
-                <tr key={ticket.id} className="clickable" onClick={() => setAberto(ticket)}>
+                <tr key={ticket.id} className="clickable" onClick={() => setAberto(comPernas(ticket))}>
                   <td>{(ticket.data_hora || ticket.created_at || "").slice(0, 10)}</td>
                   <td>{ticket.casa ?? "—"}</td>
                   <td>{ticket.titulo ?? ticket.jogo ?? "—"}</td>
@@ -189,10 +198,6 @@ export default function Page() {
                   <td>{ticket.odd_bilhete ?? "—"}</td>
                   <td>{ticket.status_usuario}</td>
                   <td className={lucroBilhete(ticket) >= 0 ? "ok" : "bad"}>{money(lucroBilhete(ticket))}</td>
-                  <td onClick={(event) => event.stopPropagation()}>
-                    <button className="green" onClick={() => setStatus(ticket, "green")}>Green</button>{" "}
-                    <button className="red" onClick={() => setStatus(ticket, "red")}>Red</button>
-                  </td>
                 </tr>
               ))
             )}
@@ -202,27 +207,12 @@ export default function Page() {
 
       {aberto && (
         <div className="overlay" onClick={() => setAberto(null)}>
-          <div className="modal" onClick={(event) => event.stopPropagation()}>
-            <p className="muted">{aberto.casa} · {nomeTipo(aberto.tipo, aberto.formato)} · ID {aberto.id_casa ?? "—"}</p>
-            <h3>{aberto.titulo || aberto.jogo || "Bilhete"}</h3>
-            <p>{money(aberto.valor_apostado)} · odd {aberto.odd_bilhete ?? "—"} · {aberto.status_usuario}</p>
-            <p className={lucroBilhete(aberto) >= 0 ? "ok" : "bad"}>P/L {money(lucroBilhete(aberto))}</p>
-            {pernasDoBilhete(aberto).length === 0 ? (
-              <p className="muted">Sem pernas salvas neste bilhete.</p>
-            ) : (
-              pernasDoBilhete(aberto).map((perna) => (
-                <div className="leg" key={perna.ordem || perna.selecao}>
-                  <strong>{perna.selecao || "Palpite"}</strong>
-                  <p className="muted">{perna.jogo || aberto.jogo || ""}</p>
-                  <p>{nomeMercado(perna.mercado)} {perna.odd_perna ? `· ${perna.odd_perna}` : ""}</p>
-                </div>
-              ))
-            )}
-            <p>
-              <button className="green" onClick={() => setStatus(aberto, "green")}>Green</button>{" "}
-              <button className="red" onClick={() => setStatus(aberto, "red")}>Red</button>{" "}
-              <button onClick={() => setAberto(null)}>Fechar</button>
-            </p>
+          <div onClick={(event) => event.stopPropagation()}>
+            <BilheteCard
+              bilhete={aberto}
+              onChange={gravar}
+              onClose={() => setAberto(null)}
+            />
           </div>
         </div>
       )}
