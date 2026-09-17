@@ -16,30 +16,14 @@ function money(value) {
 }
 
 function comPernas(ticket) {
-  return fecharBilhete({
-    ...ticket,
-    pernas: ticket.pernas || ticket.payload?.pernas || [],
-  });
+  return fecharBilhete({ ...ticket, pernas: ticket.pernas || ticket.payload?.pernas || [] });
 }
 
 export default function Page() {
-  const [settings, setSettings] = useState({
-    salario_mensal: 5000,
-    percentual_lazer: 0.08,
-    periodicidade: "mensal",
-  });
+  const [settings, setSettings] = useState({ salario_mensal: 5000, percentual_lazer: 0.08, periodicidade: "mensal" });
   const [tickets, setTickets] = useState([]);
   const [aberto, setAberto] = useState(null);
-  const [filtros, setFiltros] = useState({
-    periodo: "salario",
-    de: "",
-    ate: "",
-    casa: "",
-    status: "",
-    valorMin: "",
-    valorMax: "",
-    ordem: "data_desc",
-  });
+  const [filtros, setFiltros] = useState({ periodo: "salario", de: "", ate: "", casa: "", status: "", valorMin: "", valorMax: "", ordem: "data_desc" });
 
   async function load() {
     const supabase = getSupabase();
@@ -50,16 +34,11 @@ export default function Page() {
     setTickets(data ?? []);
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const periodicidade = settings.periodicidade || "mensal";
   const faixa = limitesSalario(periodicidade);
-  const lista = useMemo(
-    () => filtrarBilhetes(tickets, { ...filtros, periodicidade }),
-    [tickets, filtros, periodicidade],
-  );
+  const lista = useMemo(() => filtrarBilhetes(tickets, { ...filtros, periodicidade }), [tickets, filtros, periodicidade]);
   const orcamento = orcamentoDoPeriodo(settings);
   const lucro = lista.reduce((acc, ticket) => acc + lucroBilhete(ticket), 0);
   const pendente = exposicaoPendente(lista);
@@ -70,160 +49,60 @@ export default function Page() {
   async function gravar(ticket) {
     const supabase = getSupabase();
     const fechado = comPernas(ticket);
-    await supabase
-      .from("tickets")
-      .update({
-        status_usuario: fechado.status_usuario,
-        lucro: fechado.lucro,
-        payload: fechado.payload,
-      })
-      .eq("id", ticket.id);
+    const { error } = await supabase.from("tickets").update({
+      casa: fechado.casa,
+      id_casa: fechado.id_casa,
+      codigo_booking: fechado.codigo_booking,
+      data_hora: fechado.data_hora,
+      tipo: fechado.tipo,
+      formato: fechado.formato,
+      titulo: fechado.titulo,
+      valor_apostado: fechado.valor_apostado,
+      odd_bilhete: fechado.odd_bilhete,
+      retorno_casa: fechado.retorno_casa,
+      status_usuario: fechado.status_usuario,
+      lucro: fechado.lucro,
+      payload: fechado.payload,
+    }).eq("id", ticket.id);
+    if (error) return;
     setAberto({ ...fechado, id: ticket.id });
-    load();
+    await load();
   }
 
   return (
     <section>
       <div className="presets">
-        <button className={filtros.periodo === "salario" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "salario" })}>
-          {faixa.rotulo}
-        </button>
-        <button className={filtros.periodo === "semana" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semana" })}>
-          7 dias
-        </button>
-        <button className={filtros.periodo === "mes" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "mes" })}>
-          Este mês
-        </button>
-        <button className={filtros.periodo === "semestre" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semestre" })}>
-          1 semestre
-        </button>
-        <button className={filtros.periodo === "ano" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "ano" })}>
-          1 ano
-        </button>
-        <button className={filtros.periodo === "custom" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "custom" })}>
-          Personalizado
-        </button>
+        <button className={filtros.periodo === "salario" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "salario" })}>{faixa.rotulo}</button>
+        <button className={filtros.periodo === "semana" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semana" })}>7 dias</button>
+        <button className={filtros.periodo === "mes" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "mes" })}>Este mês</button>
+        <button className={filtros.periodo === "semestre" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semestre" })}>1 semestre</button>
+        <button className={filtros.periodo === "ano" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "ano" })}>1 ano</button>
+        <button className={filtros.periodo === "custom" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "custom" })}>Personalizado</button>
       </div>
-      {filtros.periodo === "custom" && (
-        <div className="filters">
-          <div>
-            <p>De</p>
-            <input type="date" value={filtros.de} onChange={(e) => setFiltros({ ...filtros, de: e.target.value })} />
-          </div>
-          <div>
-            <p>Até</p>
-            <input type="date" value={filtros.ate} onChange={(e) => setFiltros({ ...filtros, ate: e.target.value })} />
-          </div>
-        </div>
-      )}
+      {filtros.periodo === "custom" && <div className="filters"><div><p>De</p><input type="date" value={filtros.de} onChange={(e) => setFiltros({ ...filtros, de: e.target.value })} /></div><div><p>Até</p><input type="date" value={filtros.ate} onChange={(e) => setFiltros({ ...filtros, ate: e.target.value })} /></div></div>}
       <div className="grid">
-        <article className="card">
-          <h2>Teto do período</h2>
-          <strong>{money(orcamento)}</strong>
-          <p>Recebimento {periodicidade}</p>
-        </article>
-        <article className="card">
-          <h2>Lucro / prejuízo do período</h2>
-          <strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong>
-        </article>
-        <article className="card">
-          <h2>Exposição pendente</h2>
-          <strong>{money(pendente)}</strong>
-        </article>
-        <article className="card">
-          <h2>Termômetro familiar</h2>
-          <strong className={termo.seguro ? "ok" : "bad"}>{termo.seguro ? "Seguro" : "Alerta"}</strong>
-          <p>Uso do caixa: {money(termo.consumo)} de {money(orcamento)}</p>
-        </article>
+        <article className="card"><h2>Teto do período</h2><strong>{money(orcamento)}</strong><p>Recebimento {periodicidade}</p></article>
+        <article className="card"><h2>Lucro / prejuízo do período</h2><strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong></article>
+        <article className="card"><h2>Exposição pendente</h2><strong>{money(pendente)}</strong></article>
+        <article className="card"><h2>Termômetro familiar</h2><strong className={termo.seguro ? "ok" : "bad"}>{termo.seguro ? "Seguro" : "Alerta"}</strong><p>Uso do caixa: {money(termo.consumo)} de {money(orcamento)}</p></article>
       </div>
-
       <Disciplina termo={termo} seq={seq} regras={regras} />
-
       <section className="card">
         <h2>Apostas do período</h2>
         <div className="filters">
-          <div>
-            <p>Casa</p>
-            <select value={filtros.casa} onChange={(e) => setFiltros({ ...filtros, casa: e.target.value })}>
-              <option value="">Todas</option>
-              {casas.map((casa) => (
-                <option key={casa} value={casa}>{casa}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <p>Status</p>
-            <select value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })}>
-              <option value="">Todos</option>
-              <option value="pendente">Pendente</option>
-              <option value="green">Green</option>
-              <option value="red">Red</option>
-            </select>
-          </div>
-          <div>
-            <p>Valor mín.</p>
-            <input value={filtros.valorMin} onChange={(e) => setFiltros({ ...filtros, valorMin: e.target.value })} />
-          </div>
-          <div>
-            <p>Valor máx.</p>
-            <input value={filtros.valorMax} onChange={(e) => setFiltros({ ...filtros, valorMax: e.target.value })} />
-          </div>
-          <div>
-            <p>Ordenar</p>
-            <select value={filtros.ordem} onChange={(e) => setFiltros({ ...filtros, ordem: e.target.value })}>
-              <option value="data_desc">Data (mais recente)</option>
-              <option value="odd_desc">Odd maior → menor</option>
-              <option value="odd_asc">Odd menor → maior</option>
-              <option value="valor_desc">Valor maior → menor</option>
-              <option value="valor_asc">Valor menor → maior</option>
-            </select>
-          </div>
+          <div><p>Casa</p><select value={filtros.casa} onChange={(e) => setFiltros({ ...filtros, casa: e.target.value })}><option value="">Todas</option>{casas.map((casa) => <option key={casa} value={casa}>{casa}</option>)}</select></div>
+          <div><p>Status</p><select value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })}><option value="">Todos</option><option value="pendente">Pendente</option><option value="green">Green</option><option value="red">Red</option></select></div>
+          <div><p>Valor mín.</p><input value={filtros.valorMin} onChange={(e) => setFiltros({ ...filtros, valorMin: e.target.value })} /></div>
+          <div><p>Valor máx.</p><input value={filtros.valorMax} onChange={(e) => setFiltros({ ...filtros, valorMax: e.target.value })} /></div>
+          <div><p>Ordenar</p><select value={filtros.ordem} onChange={(e) => setFiltros({ ...filtros, ordem: e.target.value })}><option value="data_desc">Data (mais recente)</option><option value="odd_desc">Odd maior → menor</option><option value="odd_asc">Odd menor → maior</option><option value="valor_desc">Valor maior → menor</option><option value="valor_asc">Valor menor → maior</option></select></div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Casa</th>
-              <th>Título</th>
-              <th>Valor</th>
-              <th>Odd</th>
-              <th>Status</th>
-              <th>Resultado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.length === 0 ? (
-              <tr><td colSpan={7}>Nenhuma aposta neste filtro.</td></tr>
-            ) : (
-              lista.map((ticket) => (
-                <tr key={ticket.id} className="clickable" onClick={() => setAberto(comPernas(ticket))}>
-                  <td>{(ticket.data_hora || ticket.created_at || "").slice(0, 10)}</td>
-                  <td>{ticket.casa ?? "—"}</td>
-                  <td>{ticket.titulo ?? ticket.jogo ?? "—"}</td>
-                  <td>{money(ticket.valor_apostado)}</td>
-                  <td>{ticket.odd_bilhete ?? "—"}</td>
-                  <td>{rotuloStatus(ticket.status_usuario)}</td>
-                  <td className={ticket.status_usuario === "red" ? "bad" : ticket.status_usuario === "green" ? "ok" : ""}>
-                    {rotuloSaldo(ticket, money(Math.abs(lucroBilhete(ticket))))}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <table><thead><tr><th>Data</th><th>Casa</th><th>Título</th><th>Valor</th><th>Odd</th><th>Status</th><th>Resultado</th></tr></thead><tbody>
+          {lista.length === 0 ? <tr><td colSpan={7}>Nenhuma aposta neste filtro.</td></tr> : lista.map((ticket) => <tr key={ticket.id} className="clickable" onClick={() => setAberto(comPernas(ticket))}>
+            <td>{(ticket.data_hora || ticket.created_at || "").slice(0, 10)}</td><td>{ticket.casa ?? "—"}</td><td>{ticket.titulo ?? ticket.jogo ?? "—"}</td><td>{money(ticket.valor_apostado)}</td><td>{ticket.odd_bilhete ?? "—"}</td><td>{rotuloStatus(ticket.status_usuario)}</td><td className={ticket.status_usuario === "red" ? "bad" : ticket.status_usuario === "green" ? "ok" : ""}>{rotuloSaldo(ticket, money(Math.abs(lucroBilhete(ticket))))}</td>
+          </tr>)}
+        </tbody></table>
       </section>
-
-      {aberto && (
-        <div className="overlay" onClick={() => setAberto(null)}>
-          <div onClick={(event) => event.stopPropagation()}>
-            <BilheteCard
-              bilhete={aberto}
-              onChange={gravar}
-              onClose={() => setAberto(null)}
-            />
-          </div>
-        </div>
-      )}
+      {aberto && <div className="overlay" onClick={() => setAberto(null)}><div onClick={(event) => event.stopPropagation()}><BilheteCard bilhete={aberto} onChange={setAberto} onConfirm={() => gravar(aberto)} onClose={() => setAberto(null)} confirmarLabel="Salvar correções" /></div></div>}
     </section>
   );
 }
