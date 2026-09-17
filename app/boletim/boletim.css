@@ -7,7 +7,7 @@ body.pagina-boletim {
   background-attachment: fixed;
 }
 body.pagina-boletim main {
-  width: min(980px, calc(100% - 48px));
+  width: min(1120px, calc(100% - 48px));
 }
 .capa h1,
 .materia h3 {
@@ -30,9 +30,9 @@ body.pagina-boletim main {
 }
 .capa-olho {
   font-family: "Source Serif 4", Georgia, serif;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.45;
-  max-width: 46ch;
+  max-width: 62ch;
   color: #d7e3f0;
 }
 .capa-abas {
@@ -46,17 +46,17 @@ body.pagina-boletim main {
   font-size: 13px;
 }
 .resumo {
-  margin: 10px 0 8px;
+  margin: 8px 0 6px;
 }
 .chamada {
   margin: 0;
-  font-family: Fraunces, Georgia, serif;
-  font-size: clamp(22px, 3.2vw, 34px);
-  font-weight: 500;
-  line-height: 1.28;
-  letter-spacing: -0.03em;
-  color: #f3f7ff;
-  max-width: 28ch;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0;
+  color: #e8eef6;
+  max-width: 72ch;
 }
 .caderno {
   margin-top: 42px;
