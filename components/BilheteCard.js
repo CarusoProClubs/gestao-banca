@@ -64,7 +64,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
           <input type="number" step="0.01" value={bilhete.valor_apostado ?? ""} onChange={(e) => editar("valor_apostado", e.target.value === "" ? null : Number(e.target.value))} />
         </label>
         <label>Odd do bilhete
-          <input type="number" step="0.01" value={bilhete.odd_bilhete ?? ""} onChange={(e) => editar("odd_bilhete", e.target.value === "" ? null : Number(e.target.value))} />
+          <input type="number" step="0.000001" value={bilhete.odd_bilhete ?? ""} onChange={(e) => editar("odd_bilhete", e.target.value === "" ? null : Number(e.target.value))} />
         </label>
       </div>
       <p className="muted">{bilhete.casa ? `${bilhete.casa} · ` : "Casa não identificada · "}{nomeTipo(bilhete.tipo, bilhete.formato)} · ID {bilhete.id_casa ?? "—"}</p>
@@ -119,7 +119,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
                 <input value={perna.mercado || ""} onChange={(e) => editarPerna(ordem, "mercado", e.target.value || null)} />
               </label>
               <label>Odd da perna
-                <input type="number" step="0.01" value={perna.odd_perna ?? ""} onChange={(e) => editarPerna(ordem, "odd_perna", e.target.value === "" ? null : Number(e.target.value))} />
+                <input type="number" step="0.000001" value={perna.odd_perna ?? ""} onChange={(e) => editarPerna(ordem, "odd_perna", e.target.value === "" ? null : Number(e.target.value))} />
               </label>
               <p>
                 {status === "pendente" ? (
