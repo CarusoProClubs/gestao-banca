@@ -56,19 +56,16 @@ export default function BoletimPage() {
   }
 
   const destaques = parsed.jogos?.filter((j) => j.principal) || [];
-  const demais = useMemo(() => {
-    const jogos = parsed.jogos || [];
-    if (filtro === "principais") return jogos.filter((j) => !j.principal);
-    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && !j.principal);
-  }, [parsed, filtro]);
   const resumoDestaques = filtro === "principais"
     ? destaques
     : destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase()).length
       ? destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())
       : destaques;
-  const materias = filtro === "principais"
-    ? demais
-    : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && j.principal).concat(demais);
+  const materias = useMemo(() => {
+    const jogos = parsed.jogos || [];
+    if (filtro === "principais") return jogos;
+    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
+  }, [parsed, filtro]);
 
   return (
     <section className="jornal">
