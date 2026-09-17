@@ -31,17 +31,15 @@ export default function PublicarBoletimPage() {
 
   async function salvar() {
     const supabase = getSupabase();
+    const contexto = [form.esporte, form.liga, form.hora].filter(Boolean).join(" · ");
     const { error } = await supabase.from("daily_entries").insert({
       data: form.data,
-      titulo: form.esporte,
+      titulo: contexto || form.esporte,
       evento: form.evento,
       mercado: form.mercado,
       odd_sugerida: form.odd_sugerida ? Number(String(form.odd_sugerida).replace(",", ".")) : null,
       nivel: "boletim",
-      motivo: [form.esporte, form.liga, form.hora].filter(Boolean).join(" · ") + (form.motivo ? ` — ${form.motivo}` : ""),
-      esporte: form.esporte,
-      liga: form.liga,
-      hora: form.hora,
+      motivo: form.motivo,
     });
     setMsg(error ? error.message : "Jogo publicado no boletim.");
     if (!error) {
@@ -59,7 +57,7 @@ export default function PublicarBoletimPage() {
   return (
     <section className="card">
       <h2>Montar boletim do dia</h2>
-      <p>Um jogo de cada vez. Pode ser futebol, basquete, NFL, tênis... não precisa estar na alavancagem.</p>
+      <p>Um jogo de cada vez. Qualquer esporte. Não precisa estar na alavancagem da semana.</p>
       <p>Data</p>
       <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
       <p>Esporte</p>
