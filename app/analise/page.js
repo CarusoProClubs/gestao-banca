@@ -20,8 +20,8 @@ function Tabela({ titulo, rows }) {
           <tr>
             <th>Grupo</th>
             <th>Qtd</th>
-            <th>Green</th>
-            <th>Red</th>
+            <th>🟢 Green</th>
+            <th>🔴 Red</th>
             <th>Acerto</th>
             <th>Apostado</th>
             <th>Lucro</th>
@@ -70,7 +70,7 @@ export default function AnalisePage() {
         <article className="card">
           <h2>Bilhetes</h2>
           <strong>{analise.total}</strong>
-          <p>{analise.green} green · {analise.red} red · {analise.pendente} pendente</p>
+          <p>{analise.green} 🟢 · {analise.red} 🔴 · {analise.pendente} pendente</p>
         </article>
         <article className="card">
           <h2>Acerto</h2>
