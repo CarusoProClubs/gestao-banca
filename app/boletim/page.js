@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
-import { chamadaBancada, nomeProprio, vozMateria, vozTexto, vozTrecho } from "../../lib/voz-esportiva";
+import { chamadaBancada, nomeProprio, vozDetalhe, vozMateria, vozTexto } from "../../lib/voz-esportiva";
 import "./boletim.css";
 
 function dataBonita(iso) {
@@ -41,6 +41,7 @@ export default function BoletimPage() {
     const supabase = getSupabase();
     const { error } = await supabase.from("boletim_txt").upsert({ data: hoje, bruto, parsed: lido });
     setMsg(error ? error.message : `${lido.jogos.length} jogos no ar.`);
+    event.target.value = "";
   }
 
   const destaques = parsed.jogos?.filter((j) => j.principal) || [];
@@ -49,9 +50,10 @@ export default function BoletimPage() {
     : destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase()).length
       ? destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())
       : destaques;
+
   const materias = useMemo(() => {
     const jogos = parsed.jogos || [];
-    if (filtro === "principais") return jogos;
+    if (filtro === "principais") return jogos.filter((j) => j.principal);
     return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
   }, [parsed, filtro]);
 
@@ -61,7 +63,8 @@ export default function BoletimPage() {
         <p className="capa-selo">Edição · {dataBonita(hoje)}</p>
         <h1>{parsed.manchete ? nomeProprio(parsed.manchete) : "A edição de hoje ainda vai ao ar"}</h1>
         {parsed.geral && <p className="capa-olho">{vozTexto(parsed.geral)}</p>}
-        <nav className="capa-abas">
+
+        <nav className="capa-abas" aria-label="Esportes da edição">
           <button className={filtro === "principais" ? "active" : ""} onClick={() => { setFiltro("principais"); setAberto(null); }}>
             Principais
           </button>
@@ -71,10 +74,11 @@ export default function BoletimPage() {
             </button>
           ))}
         </nav>
+
         <p className="capa-admin">
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
           <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
-          {msg && <span> {msg}</span>}
+          {msg && <span aria-live="polite">{msg}</span>}
         </p>
       </header>
 
@@ -86,21 +90,26 @@ export default function BoletimPage() {
 
       <section className="caderno">
         {materias.length === 0 && <p className="vazio">A redação ainda não fechou esta parte da edição.</p>}
+
         {materias.map((jogo, index) => {
           const abertoAgora = aberto === `${filtro}-${index}`;
-          const preview = vozTrecho(jogo.detalhe) || vozMateria(jogo);
+          const destaque = filtro === "principais" && index === 0;
           return (
-            <article className="materia" key={`${jogo.jogo}-${index}`}>
-              <p className="materia-chapéu">{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join("  ·  ")}</p>
+            <article className={`materia${destaque ? " destaque" : ""}`} key={`${jogo.jogo}-${index}`}>
+              <p className="materia-chapéu">
+                {[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join("  ·  ")}
+              </p>
               <h3>{nomeProprio(jogo.jogo)}</h3>
+
               {abertoAgora ? (
-                <div className="materia-corpo">{vozTexto(jogo.detalhe || jogo.noticia)}</div>
+                <div className="materia-corpo">{vozDetalhe(jogo)}</div>
               ) : (
-                <p className="materia-linha">{preview}</p>
+                <p className="materia-linha">{vozMateria(jogo)}</p>
               )}
-              {(jogo.detalhe || jogo.noticia) && (
+
+              {(jogo.detalhe || jogo.noticia || jogo.resumo || jogo.leitura) && (
                 <button className="texto" onClick={() => setAberto(abertoAgora ? null : `${filtro}-${index}`)}>
-                  {abertoAgora ? "Fechar" : "Continuar leitura"}
+                  {abertoAgora ? "Fechar leitura" : "Continuar leitura"}
                 </button>
               )}
             </article>
