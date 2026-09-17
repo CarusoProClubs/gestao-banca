@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { interpretarBilhete } from "../../../lib/leitor-aposta";
+import { validarResultadosBilhete } from "../../../lib/validar-aposta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,8 @@ export async function POST(request) {
     const files = form.getAll("files").filter((file) => file && typeof file.arrayBuffer === "function");
     if (!files.length) return NextResponse.json({ error: "Selecione pelo menos uma imagem." }, { status: 400 });
 
-    const result = await interpretarBilhete(files);
+    const leitura = await interpretarBilhete(files);
+    const result = await validarResultadosBilhete(leitura);
     return NextResponse.json({ ok: true, bilhete: result });
   } catch (error) {
     console.error("[ler-bilhete]", error);
