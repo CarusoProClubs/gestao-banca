@@ -3,6 +3,7 @@
 import { nomeMercado, nomeTipo } from "../lib/mercados";
 import { marcarPerna, statusDaPerna } from "../lib/resultado";
 import { lucroBilhete } from "../lib/types";
+import { rotuloSaldo } from "../lib/rotulos";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -23,9 +24,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
       <p>
         {money(bilhete.valor_apostado)} · odd {bilhete.odd_bilhete ?? "—"} · {bilhete.status_usuario}
       </p>
-      <p className={lucro >= 0 ? "ok" : "bad"}>
-        {bilhete.status_usuario === "pendente" ? "Saldo ainda pendente" : lucro >= 0 ? `Lucro ${money(lucro)}` : `Prejuízo ${money(lucro)}`}
-      </p>
+      <p className={lucro >= 0 ? "ok" : "bad"}>{rotuloSaldo(bilhete, money(Math.abs(lucro)))}</p>
       {multipla && <p className="muted">Um red em qualquer palpite fecha o bilhete como perdido.</p>}
       {pernas.length === 0 ? (
         <p className="muted">Sem palpite separado neste print.</p>
