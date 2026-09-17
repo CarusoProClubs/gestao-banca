@@ -6,6 +6,11 @@ import { parseBoletimTxt } from "../../lib/boletim-txt";
 import { textoLimpo } from "../../lib/texto-limpo";
 import "./boletim.css";
 
+function dataBonita(iso) {
+  const [ano, mes, dia] = String(iso).split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
   const arquivoRef = useRef(null);
@@ -35,7 +40,7 @@ export default function BoletimPage() {
     setParsed(lido);
     const supabase = getSupabase();
     const { error } = await supabase.from("boletim_txt").upsert({ data: hoje, bruto, parsed: lido });
-    setMsg(error ? error.message : `${lido.jogos.length} jogos lidos do boletim.`);
+    setMsg(error ? error.message : `${lido.jogos.length} jogos no ar.`);
   }
 
   const lista = useMemo(() => {
@@ -46,22 +51,12 @@ export default function BoletimPage() {
   }, [parsed, filtro]);
 
   return (
-    <section>
-      <section className="card">
-        <h2>TXT do boletim</h2>
-        <p>Sobe a newsletter do dia.</p>
-        <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
-        <p>
-          <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
-        </p>
-        <p>{msg}</p>
-      </section>
-
-      <section className="card">
-        <h2>Boletim</h2>
-        <p className="game">{textoLimpo(parsed.manchete) || "Boletim do dia"}</p>
-        {parsed.geral && <p className="muted">{textoLimpo(parsed.geral)}</p>}
-        <div className="presets">
+    <section className="folha">
+      <header className="edicao">
+        <p className="edicao-kicker">Boletim · {dataBonita(hoje)}</p>
+        <h1>{textoLimpo(parsed.manchete) || "A edição de hoje ainda vai ao ar"}</h1>
+        {parsed.geral && <p className="edicao-lead">{textoLimpo(parsed.geral)}</p>}
+        <div className="edicao-filtros">
           <button className={filtro === "principais" ? "active" : ""} onClick={() => setFiltro("principais")}>
             Principais
           </button>
@@ -74,31 +69,40 @@ export default function BoletimPage() {
             </button>
           ))}
         </div>
-      </section>
+        <div className="edicao-admin">
+          <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
+          <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
+          {msg && <span>{msg}</span>}
+        </div>
+      </header>
 
       {lista.length === 0 ? (
-        <section className="card">
-          <p>{parsed.jogos?.length ? "Nenhum jogo neste filtro." : "O boletim de hoje ainda não foi enviado."}</p>
-        </section>
+        <article className="materia">
+          <p>{parsed.jogos?.length ? "Nada neste recorte." : "Quando o TXT do dia subir, a edição aparece aqui."}</p>
+        </article>
       ) : (
-        lista.map((jogo, index) => (
-          <article className="card" key={`${jogo.jogo}-${index}`}>
-            {jogo.principal && <p className="pill">Principal</p>}
-            <h2 className="game">{jogo.jogo}</h2>
-            <p className="muted">
-              {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.hora || ""}
-            </p>
-            {jogo.noticia && <p>{textoLimpo(jogo.noticia)}</p>}
-            {aberto === index ? (
-              <>
-                <p className="muted" style={{ whiteSpace: "pre-wrap" }}>{textoLimpo(jogo.detalhe)}</p>
-                <p><button onClick={() => setAberto(null)}>Fechar detalhe</button></p>
-              </>
-            ) : (
-              <p><button onClick={() => setAberto(index)}>Ler detalhe</button></p>
-            )}
-          </article>
-        ))
+        <div className="grade-boletim">
+          {lista.map((jogo, index) => (
+            <article className={jogo.principal && index === 0 && filtro === "principais" ? "materia destaque" : "materia"} key={`${jogo.jogo}-${index}`}>
+              <div className="materia-meta">
+                {jogo.principal && <span className="pill">Destaque</span>}
+                <span>{jogo.esporte}</span>
+                {jogo.liga && <span>{jogo.liga}</span>}
+                {jogo.hora && <span>{jogo.hora}</span>}
+              </div>
+              <h2>{jogo.jogo}</h2>
+              {jogo.noticia && <p className="materia-linha">{textoLimpo(jogo.noticia)}</p>}
+              {aberto === index ? (
+                <>
+                  <div className="materia-corpo">{textoLimpo(jogo.detalhe)}</div>
+                  <button onClick={() => setAberto(null)}>Fechar</button>
+                </>
+              ) : (
+                <button onClick={() => setAberto(index)}>Ler a matéria</button>
+              )}
+            </article>
+          ))}
+        </div>
       )}
     </section>
   );
