@@ -55,8 +55,9 @@ export default function BoletimPage() {
       </section>
 
       <section className="card">
-        <h2>{textoLimpo(parsed.manchete) || "Boletim do dia"}</h2>
-        {parsed.geral && <p>{textoLimpo(parsed.geral)}</p>}
+        <h2>Boletim</h2>
+        <p className="game">{textoLimpo(parsed.manchete) || "Boletim do dia"}</p>
+        {parsed.geral && <p className="muted">{textoLimpo(parsed.geral)}</p>}
         <div className="presets">
           <button className={filtro === "principais" ? "active" : ""} onClick={() => setFiltro("principais")}>
             Principais
@@ -79,15 +80,15 @@ export default function BoletimPage() {
       ) : (
         lista.map((jogo, index) => (
           <article className="card" key={`${jogo.jogo}-${index}`}>
-            {jogo.principal && <p className="ok">Principal</p>}
-            <h2>{jogo.jogo}</h2>
+            {jogo.principal && <p className="pill">Principal</p>}
+            <h2 className="game">{jogo.jogo}</h2>
             <p className="muted">
               {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.hora || ""}
             </p>
             {jogo.noticia && <p>{textoLimpo(jogo.noticia)}</p>}
             {aberto === index ? (
               <>
-                <p style={{ whiteSpace: "pre-wrap" }}>{textoLimpo(jogo.detalhe)}</p>
+                <p className="muted" style={{ whiteSpace: "pre-wrap" }}>{textoLimpo(jogo.detalhe)}</p>
                 <p><button onClick={() => setAberto(null)}>Fechar detalhe</button></p>
               </>
             ) : (
