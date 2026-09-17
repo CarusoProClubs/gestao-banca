@@ -1,0 +1,29 @@
+>>> TIME A x TIME B — HORÁRIO — COMPETIÇÃO (estádio)
+
+Atmosfera
+Uma frase do clima: décimo segundo, classificação, rivalidade, estreia, jogo de gestão, casa cheia.
+Peso da partida: o que cada um ganha ou perde hoje.
+
+Forma recente
+TIME A: últimos 5, gols pró/contra, mando, sequência.
+TIME B: últimos 5, gols pró/contra, fora, sequência.
+
+Desfalques
+TIME A — lesão: Nome (motivo, previsão). suspensão: Nome (jogos). dúvida: Nome.
+TIME B — lesão: Nome. suspensão: Nome. dúvida: Nome.
+Se não houver: sem desfalque relevante.
+
+Resumo do cenário
+2 a 4 frases ligando peso + forma + desfalque. Sem lista de odd aqui.
+
+O que pesa
+- 3 a 6 bullets só do que muda o jogo (titular fora, árbitro, histórico, calendário).
+
+Leitura
+Como o jogo deve andar nos primeiros 20 minutos e o que muda se sair gol cedo.
+
+Melhor preço
+- ...
+
+Preço de risco
+- ...
