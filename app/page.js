@@ -2,18 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getSupabase } from "../lib/supabase";
-import { exposicaoPendente, lucroBilhete, orcamentoProtegido } from "../lib/types";
+import { exposicaoPendente, lucroBilhete } from "../lib/types";
 import { filtrarBilhetes } from "../lib/filtros";
+import { limitesSalario, orcamentoDoPeriodo, termometroFamiliar } from "../lib/periodo";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export default function Page() {
-  const [settings, setSettings] = useState({ salario_mensal: 5000, percentual_lazer: 0.08 });
+  const [settings, setSettings] = useState({
+    salario_mensal: 5000,
+    percentual_lazer: 0.08,
+    periodicidade: "mensal",
+  });
   const [tickets, setTickets] = useState([]);
   const [filtros, setFiltros] = useState({
-    periodo: "mes",
+    periodo: "salario",
     de: "",
     ate: "",
     casa: "",
@@ -27,7 +32,7 @@ export default function Page() {
     const supabase = getSupabase();
     if (!supabase) return;
     const { data: settingsRows } = await supabase.from("bankroll_settings").select("*").limit(1);
-    if (settingsRows?.[0]) setSettings(settingsRows[0]);
+    if (settingsRows?.[0]) setSettings({ periodicidade: "mensal", ...settingsRows[0] });
     const { data } = await supabase.from("tickets").select("*").order("created_at", { ascending: false });
     setTickets(data ?? []);
   }
@@ -36,12 +41,16 @@ export default function Page() {
     load();
   }, []);
 
-  const lista = useMemo(() => filtrarBilhetes(tickets, filtros), [tickets, filtros]);
-  const teto = orcamentoProtegido(settings);
+  const periodicidade = settings.periodicidade || "mensal";
+  const faixa = limitesSalario(periodicidade);
+  const lista = useMemo(
+    () => filtrarBilhetes(tickets, { ...filtros, periodicidade }),
+    [tickets, filtros, periodicidade],
+  );
+  const orcamento = orcamentoDoPeriodo(settings);
   const lucro = lista.reduce((acc, ticket) => acc + lucroBilhete(ticket), 0);
-  const apostado = lista.reduce((acc, ticket) => acc + Number(ticket.valor_apostado || 0), 0);
   const pendente = exposicaoPendente(lista);
-  const comprometido = Number(settings.salario_mensal) > 0 ? apostado / Number(settings.salario_mensal) : 0;
+  const termo = termometroFamiliar({ lucro, pendente, orcamento });
   const casas = [...new Set(tickets.map((t) => t.casa).filter(Boolean))];
 
   async function setStatus(ticket, status_usuario) {
@@ -54,17 +63,24 @@ export default function Page() {
   return (
     <section>
       <div className="presets">
-        {[
-          ["mes", "Este mês"],
-          ["semana", "7 dias"],
-          ["semestre", "1 semestre"],
-          ["ano", "1 ano"],
-          ["custom", "Personalizado"],
-        ].map(([id, label]) => (
-          <button key={id} className={filtros.periodo === id ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: id })}>
-            {label}
-          </button>
-        ))}
+        <button className={filtros.periodo === "salario" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "salario" })}>
+          {faixa.rotulo}
+        </button>
+        <button className={filtros.periodo === "semana" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semana" })}>
+          7 dias
+        </button>
+        <button className={filtros.periodo === "mes" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "mes" })}>
+          Este mês
+        </button>
+        <button className={filtros.periodo === "semestre" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "semestre" })}>
+          1 semestre
+        </button>
+        <button className={filtros.periodo === "ano" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "ano" })}>
+          1 ano
+        </button>
+        <button className={filtros.periodo === "custom" ? "active" : ""} onClick={() => setFiltros({ ...filtros, periodo: "custom" })}>
+          Personalizado
+        </button>
       </div>
       {filtros.periodo === "custom" && (
         <div className="filters">
@@ -80,8 +96,9 @@ export default function Page() {
       )}
       <div className="grid">
         <article className="card">
-          <h2>Orçamento protegido</h2>
-          <strong>{money(teto)}</strong>
+          <h2>Teto do período</h2>
+          <strong>{money(orcamento)}</strong>
+          <p>Recebimento {periodicidade}</p>
         </article>
         <article className="card">
           <h2>Lucro / prejuízo do período</h2>
@@ -92,11 +109,9 @@ export default function Page() {
           <strong>{money(pendente)}</strong>
         </article>
         <article className="card">
-          <h2>Termômetro</h2>
-          <strong className={comprometido <= Number(settings.percentual_lazer) ? "ok" : "bad"}>
-            {comprometido <= Number(settings.percentual_lazer) ? "Seguro" : "Alerta"}
-          </strong>
-          <p>{(comprometido * 100).toFixed(1)}% do salário no período</p>
+          <h2>Termômetro familiar</h2>
+          <strong className={termo.seguro ? "ok" : "bad"}>{termo.seguro ? "Seguro" : "Alerta"}</strong>
+          <p>Uso do caixa: {money(termo.consumo)} de {money(orcamento)}</p>
         </article>
       </div>
 

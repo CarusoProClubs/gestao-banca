@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { resumirAnalise } from "../../lib/analise";
-import { filtrarBilhetes } from "../../lib/filtros";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -52,7 +51,6 @@ function Tabela({ titulo, rows }) {
 
 export default function AnalisePage() {
   const [tickets, setTickets] = useState([]);
-  const [periodo, setPeriodo] = useState("mes");
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -60,26 +58,14 @@ export default function AnalisePage() {
     supabase.from("tickets").select("*").then(({ data }) => setTickets(data ?? []));
   }, []);
 
-  const lista = useMemo(() => filtrarBilhetes(tickets, { periodo }), [tickets, periodo]);
-  const analise = useMemo(() => resumirAnalise(lista), [lista]);
+  const analise = useMemo(() => resumirAnalise(tickets), [tickets]);
   const melhorMercado = analise.porMercado[0];
   const piorMercado = [...analise.porMercado].sort((a, b) => a.lucro - b.lucro)[0];
   const melhorFaixa = analise.porFaixaOdd[0];
 
   return (
     <section>
-      <div className="presets">
-        {[
-          ["mes", "Este mês"],
-          ["semana", "7 dias"],
-          ["semestre", "1 semestre"],
-          ["ano", "1 ano"],
-        ].map(([id, label]) => (
-          <button key={id} className={periodo === id ? "active" : ""} onClick={() => setPeriodo(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <p>Análise de todos os bilhetes deste perfil, sem recorte de data.</p>
       <div className="grid">
         <article className="card">
           <h2>Bilhetes</h2>
