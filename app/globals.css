@@ -1,5 +1,5 @@
 :root {
-  --bg: #04070d;
+  --bg: #071018;
   --card: rgba(9, 16, 28, 0.86);
   --line: rgba(80, 220, 170, 0.22);
   --text: #f4f8ff;
@@ -14,7 +14,7 @@
 html, body {
   margin: 0;
   min-height: 100%;
-  background: #04070d;
+  background: #071018;
   color: var(--text);
   font-family: Manrope, Inter, ui-sans-serif, system-ui, sans-serif;
 }
@@ -22,29 +22,25 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-color: #04070d;
+  background-color: #071018;
   background-image:
-    radial-gradient(70vw 50vh at 0% 0%, rgba(0, 255, 170, 0.28), transparent 58%),
-    radial-gradient(60vw 55vh at 100% 0%, rgba(40, 140, 255, 0.34), transparent 55%),
-    radial-gradient(55vw 45vh at 85% 100%, rgba(180, 40, 255, 0.22), transparent 52%),
-    radial-gradient(40vw 35vh at 15% 85%, rgba(255, 210, 80, 0.08), transparent 50%),
-    linear-gradient(180deg, rgba(4,7,13,.15), rgba(4,7,13,.55));
-  animation: aurora 18s ease-in-out infinite alternate;
+    radial-gradient(42vw 90vh at 0% 50%, rgba(0, 255, 170, 0.55), transparent 62%),
+    radial-gradient(42vw 90vh at 100% 50%, rgba(50, 150, 255, 0.58), transparent 62%),
+    radial-gradient(70vw 40vh at 50% -10%, rgba(120, 80, 255, 0.28), transparent 58%),
+    radial-gradient(70vw 35vh at 50% 110%, rgba(180, 40, 255, 0.22), transparent 55%);
 }
 .bg::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient(115deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 18px),
-    radial-gradient(circle at 50% 0%, transparent 40%, rgba(0,0,0,.35) 100%);
+  background: repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 18px);
   pointer-events: none;
 }
-@keyframes aurora {
-  from { filter: saturate(1) hue-rotate(0deg); }
-  to { filter: saturate(1.25) hue-rotate(12deg); }
+main {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 20px 0 96px;
 }
-main { max-width: 1120px; margin: 0 auto; padding: 20px 18px 96px; }
 nav {
   display: flex;
   gap: 6px;
@@ -179,9 +175,7 @@ textarea, input, select {
 }
 .muted { color: var(--muted); font-size: 13px; }
 .bell-wrap { margin-left: auto; position: relative; }
-.bell {
-  background: linear-gradient(90deg, #173044, #1d3b2c);
-}
+.bell { background: linear-gradient(90deg, #173044, #1d3b2c); }
 .bell-panel {
   position: absolute;
   right: 0;
@@ -200,6 +194,7 @@ textarea, input, select {
 .bell-item span { display: block; color: var(--muted); font-size: 13px; }
 .bell-item.nova b { color: var(--accent); }
 @media (max-width: 720px) {
+  main { width: calc(100% - 24px); }
   nav { top: 0; border-radius: 0 0 16px 16px; }
   .card .game { font-size: 18px; }
 }
