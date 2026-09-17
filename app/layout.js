@@ -12,6 +12,7 @@ export default function RootLayout({ children }) {
             <strong>Gestão de Banca</strong>
             <Link href="/">Painel</Link>
             <Link href="/analise">Análise</Link>
+            <Link href="/alavancagem">Alavancagem</Link>
             <Link href="/boletim">Boletim</Link>
             <Link href="/relatorio">Relatório</Link>
             <Link href="/importar">Enviar print</Link>
