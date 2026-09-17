@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
-import { rotuloMercado } from "../../lib/mercado-texto";
 
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
@@ -11,6 +10,7 @@ export default function BoletimPage() {
   const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseBoletimTxt(""));
   const [filtro, setFiltro] = useState("principais");
+  const [aberto, setAberto] = useState(null);
   const [msg, setMsg] = useState("");
 
   async function load() {
@@ -37,13 +37,13 @@ export default function BoletimPage() {
     setParsed(lido);
     const supabase = getSupabase();
     const { error } = await supabase.from("boletim_txt").upsert({ data: hoje, bruto, parsed: lido });
-    setMsg(error ? error.message : "Boletim do dia publicado.");
+    setMsg(error ? error.message : `${lido.jogos.length} jogos lidos do boletim.`);
   }
 
   const lista = useMemo(() => {
     const jogos = parsed.jogos || [];
     if (filtro === "principais") return jogos.filter((j) => j.principal);
-    if (filtro === "todos" || filtro === "geral") return jogos;
+    if (filtro === "todos") return jogos;
     return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
   }, [parsed, filtro]);
 
@@ -52,6 +52,7 @@ export default function BoletimPage() {
       {admin && (
         <section className="card">
           <h2>TXT do boletim</h2>
+          <p>Sobe a newsletter no formato que você já escreve.</p>
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
           <p>
             <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
@@ -88,11 +89,17 @@ export default function BoletimPage() {
             {jogo.principal && <p className="ok">Principal</p>}
             <h2>{jogo.jogo}</h2>
             <p className="muted">
-              {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.data ? `· ${jogo.data}` : ""} {jogo.hora || ""}
+              {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.hora || ""}
             </p>
-            <p>{rotuloMercado(jogo.mercado, jogo.jogo)} {jogo.odd ? `· odd ${jogo.odd}` : ""}</p>
             {jogo.noticia && <p>{jogo.noticia}</p>}
-            {jogo.detalhe && <p className="muted">{jogo.detalhe}</p>}
+            {aberto === index ? (
+              <>
+                <p style={{ whiteSpace: "pre-wrap" }}>{jogo.detalhe}</p>
+                <p><button onClick={() => setAberto(null)}>Fechar detalhe</button></p>
+              </>
+            ) : (
+              <p><button onClick={() => setAberto(index)}>Ler detalhe</button></p>
+            )}
           </article>
         ))
       )}
