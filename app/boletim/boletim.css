@@ -1,6 +1,6 @@
 body.pagina-boletim .bg {
   background-image:
-    radial-gradient(900px 420px at 10% -10%, rgba(125, 179, 255, 0.2), transparent 56%),
-    radial-gradient(760px 420px at 100% 110%, rgba(62, 224, 160, 0.14), transparent 52%),
-    repeating-linear-gradient(125deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 14px);
+    radial-gradient(70vw 50vh at 5% -5%, rgba(40, 140, 255, 0.36), transparent 56%),
+    radial-gradient(60vw 50vh at 100% 10%, rgba(0, 255, 170, 0.22), transparent 54%),
+    radial-gradient(50vw 40vh at 70% 110%, rgba(255, 80, 180, 0.16), transparent 50%);
 }
