@@ -42,6 +42,7 @@ create table if not exists public.tickets (
   moeda text not null default 'BRL',
   odd_bilhete numeric(10, 4),
   retorno_casa numeric(12, 2),
+  valor_resgatado numeric(12, 2),
   status_print text not null default 'pendente',
   status_usuario text not null default 'pendente',
   esporte text,
@@ -51,6 +52,8 @@ create table if not exists public.tickets (
   created_at timestamptz not null default now(),
   unique (organization_id, casa, id_casa)
 );
+
+alter table public.tickets add column if not exists valor_resgatado numeric(12, 2);
 
 create table if not exists public.ticket_legs (
   id uuid primary key default gen_random_uuid(),
