@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
+import { NIVEIS } from "../../lib/alavancagem";
 
 export default function ConfigPage() {
   const [form, setForm] = useState({
@@ -10,6 +11,7 @@ export default function ConfigPage() {
     stake_padrao: 0.02,
     meta_lucro: 0.2,
     periodicidade: "mensal",
+    nivel_risco: "segura",
   });
   const [msg, setMsg] = useState("");
 
@@ -17,7 +19,7 @@ export default function ConfigPage() {
     const supabase = getSupabase();
     if (!supabase) return;
     supabase.from("bankroll_settings").select("*").limit(1).then(({ data }) => {
-      if (data?.[0]) setForm({ periodicidade: "mensal", ...data[0] });
+      if (data?.[0]) setForm({ periodicidade: "mensal", nivel_risco: "segura", ...data[0] });
     });
   }, []);
 
@@ -30,14 +32,16 @@ export default function ConfigPage() {
       .select("organization_id")
       .eq("id", userData.user.id)
       .single();
-    const { error } = await supabase.from("bankroll_settings").upsert({
+    const payload = {
       organization_id: profile.organization_id,
       salario_mensal: Number(form.salario_mensal),
       percentual_lazer: Number(form.percentual_lazer),
       stake_padrao: Number(form.stake_padrao),
       meta_lucro: Number(form.meta_lucro),
       periodicidade: form.periodicidade,
-    });
+      nivel_risco: form.nivel_risco,
+    };
+    const { error } = await supabase.from("bankroll_settings").upsert(payload);
     setMsg(error ? error.message : "Salvo");
   }
 
@@ -54,8 +58,13 @@ export default function ConfigPage() {
       <input value={form.salario_mensal} onChange={(e) => setForm({ ...form, salario_mensal: e.target.value })} />
       <p>% lazer / apostas (0.08 = 8%)</p>
       <input value={form.percentual_lazer} onChange={(e) => setForm({ ...form, percentual_lazer: e.target.value })} />
-      <p>Stake padrão (0.02 = 2%)</p>
-      <input value={form.stake_padrao} onChange={(e) => setForm({ ...form, stake_padrao: e.target.value })} />
+      <p>Alavancagem</p>
+      <select value={form.nivel_risco} onChange={(e) => setForm({ ...form, nivel_risco: e.target.value })}>
+        {Object.values(NIVEIS).map((nivel) => (
+          <option key={nivel.id} value={nivel.id}>{nivel.nome}</option>
+        ))}
+      </select>
+      <p>{NIVEIS[form.nivel_risco]?.texto}</p>
       <p>
         <button onClick={save}>Salvar</button>
       </p>
