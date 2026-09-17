@@ -12,6 +12,17 @@ function dataBonita(iso) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function trecho(texto) {
+  const limpo = textoLimpo(texto || "").replace(/\n{2,}/g, "\n").trim();
+  if (!limpo) return "";
+  const partes = limpo.split(/\n/).filter(Boolean);
+  const bloco = partes.slice(0, 4).join("\n");
+  if (bloco.length <= 520) return bloco;
+  const corte = bloco.slice(0, 520);
+  const ponto = Math.max(corte.lastIndexOf(". "), corte.lastIndexOf(".\n"));
+  return `${ponto > 220 ? corte.slice(0, ponto + 1) : corte}…`;
+}
+
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
   const arquivoRef = useRef(null);
@@ -55,6 +66,9 @@ export default function BoletimPage() {
     : destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase()).length
       ? destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())
       : destaques;
+  const materias = filtro === "principais"
+    ? demais
+    : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && j.principal).concat(demais);
 
   return (
     <section className="jornal">
@@ -86,24 +100,27 @@ export default function BoletimPage() {
       )}
 
       <section className="caderno">
-        {(filtro === "principais" ? destaques : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())).length === 0 && (
-          <p className="vazio">Nada nesta edição ainda.</p>
-        )}
-        {(filtro === "principais" ? [] : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && j.principal)).concat(demais).map((jogo, index) => (
-          <article className="materia" key={`${jogo.jogo}-${index}`}>
-            <p className="materia-chapéu">{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join("  ·  ")}</p>
-            <h3>{jogo.jogo}</h3>
-            {jogo.noticia && <p className="materia-linha">{textoLimpo(jogo.noticia)}</p>}
-            {aberto === `${filtro}-${index}` ? (
-              <>
-                <div className="materia-corpo">{textoLimpo(jogo.detalhe)}</div>
-                <button className="texto" onClick={() => setAberto(null)}>Fechar</button>
-              </>
-            ) : (
-              <button className="texto" onClick={() => setAberto(`${filtro}-${index}`)}>Continuar leitura</button>
-            )}
-          </article>
-        ))}
+        {materias.length === 0 && <p className="vazio">Nada nesta edição ainda.</p>}
+        {materias.map((jogo, index) => {
+          const preview = trecho(jogo.detalhe || jogo.noticia);
+          const abertoAgora = aberto === `${filtro}-${index}`;
+          return (
+            <article className="materia" key={`${jogo.jogo}-${index}`}>
+              <p className="materia-chapéu">{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join("  ·  ")}</p>
+              <h3>{jogo.jogo}</h3>
+              {abertoAgora ? (
+                <div className="materia-corpo">{textoLimpo(jogo.detalhe || jogo.noticia)}</div>
+              ) : (
+                preview && <p className="materia-linha">{preview}</p>
+              )}
+              {(jogo.detalhe || jogo.noticia) && (
+                <button className="texto" onClick={() => setAberto(abertoAgora ? null : `${filtro}-${index}`)}>
+                  {abertoAgora ? "Fechar" : "Continuar leitura"}
+                </button>
+              )}
+            </article>
+          );
+        })}
       </section>
     </section>
   );
