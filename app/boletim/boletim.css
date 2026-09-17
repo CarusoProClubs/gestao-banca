@@ -1,104 +1,121 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap");
+
 body.pagina-boletim {
   background-image:
-    radial-gradient(38vw 90vh at 0% 50%, rgba(40, 140, 255, 0.55), transparent 68%),
-    radial-gradient(38vw 90vh at 100% 50%, rgba(0, 255, 170, 0.38), transparent 68%),
-    radial-gradient(80vw 42vh at 50% 0%, rgba(255, 80, 180, 0.16), transparent 70%);
+    radial-gradient(38vw 90vh at 0% 50%, rgba(40, 140, 255, 0.42), transparent 68%),
+    radial-gradient(38vw 90vh at 100% 50%, rgba(0, 255, 170, 0.28), transparent 68%);
   background-attachment: fixed;
 }
-.folha { display: grid; gap: 18px; }
-.edicao {
-  padding: 28px 28px 22px;
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(12, 24, 44, 0.72), rgba(8, 14, 24, 0.82)) padding-box,
-    linear-gradient(135deg, rgba(110, 200, 255, 0.7), rgba(60, 255, 176, 0.2)) border-box;
-  border: 1px solid transparent;
+body.pagina-boletim main {
+  width: min(980px, calc(100% - 48px));
 }
-.edicao-kicker {
-  margin: 0 0 8px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-size: 11px;
+.jornal {
+  color: #eef3f8;
+}
+.capa h1,
+.resumo h2,
+.materia h3 {
+  font-family: Fraunces, Georgia, serif;
   font-weight: 800;
-  color: #7ec8ff;
+  letter-spacing: -0.04em;
 }
-.edicao h1 {
-  margin: 0 0 12px;
-  font-size: clamp(28px, 4vw, 46px);
-  line-height: 1.05;
-  letter-spacing: -0.05em;
+.capa-selo {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ec9ff;
+  font-weight: 700;
 }
-.edicao-lead {
-  max-width: 72ch;
-  color: #c5d4e6;
-  font-size: 16px;
-  line-height: 1.55;
+.capa h1 {
+  margin: 0 0 14px;
+  font-size: clamp(34px, 6vw, 64px);
+  line-height: 0.95;
 }
-.edicao-filtros {
+.capa-olho {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.45;
+  max-width: 46ch;
+  color: #d7e3f0;
+}
+.capa-abas {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 18px;
+  margin: 22px 0 10px;
 }
-.edicao-admin {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-top: 16px;
+.capa-admin {
   color: #9ab0c9;
   font-size: 13px;
 }
-.grade-boletim {
+.resumo {
+  margin: 28px 0 8px;
+}
+.resumo h2 {
+  margin: 0 0 16px;
+  font-size: 28px;
+}
+.resumo ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 16px;
+  gap: 14px;
+}
+.resumo li {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 18px;
+  line-height: 1.4;
+}
+.resumo li span,
+.resumo li em {
+  display: block;
+  font-style: normal;
+  color: #b7c9dd;
+  font-size: 15px;
+}
+.caderno {
+  margin-top: 36px;
+  columns: 1;
+}
+@media (min-width: 900px) {
+  .caderno { columns: 2; column-gap: 56px; }
 }
 .materia {
-  padding: 20px;
-  border-radius: 24px;
-  background: rgba(8, 14, 24, 0.78);
-  border: 1px solid rgba(110, 200, 255, 0.14);
+  break-inside: avoid;
+  margin: 0 0 34px;
 }
-.materia.destaque {
-  grid-column: 1 / -1;
-  padding: 26px;
-  background:
-    linear-gradient(180deg, rgba(16, 36, 58, 0.88), rgba(8, 14, 24, 0.88));
-  border-color: rgba(60, 255, 176, 0.28);
-}
-.materia-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  color: #9ab0c9;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.materia-chapéu {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  color: #8fb7e8;
+  font-weight: 700;
 }
-.materia h2 {
-  margin: 0 0 10px;
-  font-size: 26px;
-  line-height: 1.15;
-  letter-spacing: -0.04em;
+.materia h3 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
   text-transform: none;
-  color: #f4f8ff;
+  color: #fff;
 }
-.materia.destaque h2 { font-size: 34px; }
-.materia-linha {
-  color: #d5e2f0;
-  line-height: 1.5;
+.materia-linha,
+.materia-corpo {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #d5e0ec;
 }
 .materia-corpo {
   white-space: pre-wrap;
-  color: #c5d4e6;
-  line-height: 1.65;
-  margin: 12px 0;
+  margin: 10px 0;
 }
-@media (max-width: 860px) {
-  .grade-boletim { grid-template-columns: 1fr; }
-  .materia.destaque h2, .materia h2 { font-size: 22px; }
-  .edicao { padding: 20px; }
+button.texto {
+  background: none;
+  padding: 0;
+  color: #7dffc7;
+  font-size: 14px;
 }
+.vazio { color: #9ab0c9; }

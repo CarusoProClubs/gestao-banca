@@ -43,67 +43,76 @@ export default function BoletimPage() {
     setMsg(error ? error.message : `${lido.jogos.length} jogos no ar.`);
   }
 
-  const lista = useMemo(() => {
+  const destaques = parsed.jogos?.filter((j) => j.principal) || [];
+  const demais = useMemo(() => {
     const jogos = parsed.jogos || [];
-    if (filtro === "principais") return jogos.filter((j) => j.principal);
-    if (filtro === "todos") return jogos;
-    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
+    if (filtro === "principais") return jogos.filter((j) => !j.principal);
+    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && !j.principal);
   }, [parsed, filtro]);
+  const resumoDestaques = filtro === "principais"
+    ? destaques
+    : destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase()).length
+      ? destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())
+      : destaques;
 
   return (
-    <section className="folha">
-      <header className="edicao">
-        <p className="edicao-kicker">Boletim · {dataBonita(hoje)}</p>
+    <section className="jornal">
+      <header className="capa">
+        <p className="capa-selo">Edição · {dataBonita(hoje)}</p>
         <h1>{textoLimpo(parsed.manchete) || "A edição de hoje ainda vai ao ar"}</h1>
-        {parsed.geral && <p className="edicao-lead">{textoLimpo(parsed.geral)}</p>}
-        <div className="edicao-filtros">
-          <button className={filtro === "principais" ? "active" : ""} onClick={() => setFiltro("principais")}>
+        {parsed.geral && <p className="capa-olho">{textoLimpo(parsed.geral)}</p>}
+        <nav className="capa-abas">
+          <button className={filtro === "principais" ? "active" : ""} onClick={() => { setFiltro("principais"); setAberto(null); }}>
             Principais
           </button>
-          <button className={filtro === "todos" ? "active" : ""} onClick={() => setFiltro("todos")}>
-            Todos
-          </button>
           {(parsed.esportes || []).map((esporte) => (
-            <button key={esporte} className={filtro.toLowerCase() === esporte.toLowerCase() ? "active" : ""} onClick={() => setFiltro(esporte)}>
+            <button key={esporte} className={filtro.toLowerCase() === esporte.toLowerCase() ? "active" : ""} onClick={() => { setFiltro(esporte); setAberto(null); }}>
               {esporte}
             </button>
           ))}
-        </div>
-        <div className="edicao-admin">
+        </nav>
+        <p className="capa-admin">
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
           <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
-          {msg && <span>{msg}</span>}
-        </div>
+          {msg && <span> {msg}</span>}
+        </p>
       </header>
 
-      {lista.length === 0 ? (
-        <article className="materia">
-          <p>{parsed.jogos?.length ? "Nada neste recorte." : "Quando o TXT do dia subir, a edição aparece aqui."}</p>
-        </article>
-      ) : (
-        <div className="grade-boletim">
-          {lista.map((jogo, index) => (
-            <article className={jogo.principal && index === 0 && filtro === "principais" ? "materia destaque" : "materia"} key={`${jogo.jogo}-${index}`}>
-              <div className="materia-meta">
-                {jogo.principal && <span className="pill">Destaque</span>}
-                <span>{jogo.esporte}</span>
-                {jogo.liga && <span>{jogo.liga}</span>}
-                {jogo.hora && <span>{jogo.hora}</span>}
-              </div>
-              <h2>{jogo.jogo}</h2>
-              {jogo.noticia && <p className="materia-linha">{textoLimpo(jogo.noticia)}</p>}
-              {aberto === index ? (
-                <>
-                  <div className="materia-corpo">{textoLimpo(jogo.detalhe)}</div>
-                  <button onClick={() => setAberto(null)}>Fechar</button>
-                </>
-              ) : (
-                <button onClick={() => setAberto(index)}>Ler a matéria</button>
-              )}
-            </article>
-          ))}
-        </div>
+      {resumoDestaques.length > 0 && (
+        <section className="resumo">
+          <h2>Resumo do dia</h2>
+          <ol>
+            {resumoDestaques.map((jogo, index) => (
+              <li key={`resumo-${index}`}>
+                <strong>{jogo.jogo}</strong>
+                <span>{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join(" · ")}</span>
+                {jogo.noticia && <em>{textoLimpo(jogo.noticia)}</em>}
+              </li>
+            ))}
+          </ol>
+        </section>
       )}
+
+      <section className="caderno">
+        {(filtro === "principais" ? destaques : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())).length === 0 && (
+          <p className="vazio">Nada nesta edição ainda.</p>
+        )}
+        {(filtro === "principais" ? [] : parsed.jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase() && j.principal)).concat(demais).map((jogo, index) => (
+          <article className="materia" key={`${jogo.jogo}-${index}`}>
+            <p className="materia-chapéu">{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join("  ·  ")}</p>
+            <h3>{jogo.jogo}</h3>
+            {jogo.noticia && <p className="materia-linha">{textoLimpo(jogo.noticia)}</p>}
+            {aberto === `${filtro}-${index}` ? (
+              <>
+                <div className="materia-corpo">{textoLimpo(jogo.detalhe)}</div>
+                <button className="texto" onClick={() => setAberto(null)}>Fechar</button>
+              </>
+            ) : (
+              <button className="texto" onClick={() => setAberto(`${filtro}-${index}`)}>Continuar leitura</button>
+            )}
+          </article>
+        ))}
+      </section>
     </section>
   );
 }
