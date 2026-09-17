@@ -1,10 +1,9 @@
 "use client";
 
 import { nomeMercado, nomeTipo } from "../lib/mercados";
-import { marcarPerna, statusDaPerna } from "../lib/resultado";
+import { marcarPerna, statusDaPerna, fecharBilhete } from "../lib/resultado";
 import { lucroBilhete } from "../lib/types";
 import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
-import { corrigirTime } from "../lib/times";
 
 const CASAS = ["Betano", "bet365", "Betfair", "Sportingbet", "KTO", "Novibet", "EstrelaBet", "Superbet", "Blaze", "Pixbet", "Stake", "1xBet", "Rivalo"];
 
@@ -14,7 +13,7 @@ function money(value) {
 
 function alterarBilhete(bilhete, campo, valor) {
   const atualizado = { ...bilhete, [campo]: valor };
-  return { ...atualizado, payload: { ...(atualizado.payload || {}), [campo]: valor } };
+  return fecharBilhete({ ...atualizado, payload: { ...(atualizado.payload || {}), [campo]: valor } });
 }
 
 export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, onClose, confirmarLabel = "Confirmar" }) {
@@ -31,7 +30,11 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
     const novasPernas = pernas.map((perna, index) =>
       (perna.ordem ?? index + 1) === ordem ? { ...perna, [campo]: valor } : perna
     );
-    onChange({ ...bilhete, pernas: novasPernas, payload: { ...(bilhete.payload || {}), pernas: novasPernas } });
+    onChange(fecharBilhete({ ...bilhete, pernas: novasPernas, payload: { ...(bilhete.payload || {}), pernas: novasPernas } }));
+  }
+
+  function definirResultado(status) {
+    onChange(fecharBilhete({ ...bilhete, status_usuario: status }));
   }
 
   function alternar(pernaOrdem, atual) {
@@ -40,7 +43,13 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
 
   return (
     <div className="modal" style={{ position: "relative", margin: "16px 0" }}>
-      <p className="muted">Confira e corrija os dados lidos antes de salvar.</p>
+      <p className="muted">Confira e corrija os dados lidos antes de salvar. Campos incertos aparecem nos avisos.</p>
+      {bilhete.avisos?.length > 0 && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <strong>⚠️ Pontos para conferir</strong>
+          <ul>{bilhete.avisos.map((aviso, index) => <li key={index}>{aviso}</li>)}</ul>
+        </div>
+      )}
       <div className="grid">
         <label>Casa de aposta
           <select value={bilhete.casa || ""} onChange={(e) => editar("casa", e.target.value || null)}>
@@ -62,11 +71,35 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
       <label>Título do bilhete
         <input value={bilhete.titulo || ""} onChange={(e) => editar("titulo", e.target.value || null)} />
       </label>
+
+      <label>Resultado do bilhete
+        <select value={bilhete.status_usuario || "pendente"} onChange={(e) => definirResultado(e.target.value)}>
+          <option value="pendente">Pendente</option>
+          <option value="green">🟢 Green</option>
+          <option value="red">🔴 Red</option>
+          <option value="anulada">⚪ Anulada</option>
+          <option value="cashout">🟡 Encerrada antecipadamente</option>
+        </select>
+      </label>
+
+      {bilhete.status_usuario === "cashout" && (
+        <label>Valor resgatado no cashout
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={bilhete.valor_resgatado ?? ""}
+            onChange={(e) => editar("valor_resgatado", e.target.value === "" ? null : Number(e.target.value))}
+            placeholder="Ex.: 73,50"
+          />
+        </label>
+      )}
+
       <p>{money(bilhete.valor_apostado)} · odd {bilhete.odd_bilhete ?? "—"} · {rotuloStatus(bilhete.status_usuario)}</p>
       <p className={bilhete.status_usuario === "red" ? "bad" : bilhete.status_usuario === "green" ? "ok" : ""}>
         {rotuloSaldo(bilhete, money(Math.abs(lucro)))}
       </p>
-      {multipla && <p className="muted">Um red em qualquer palpite fecha o bilhete como perdido.</p>}
+      {multipla && <p className="muted">Um red em qualquer palpite fecha o bilhete como perdido, exceto quando o resultado do bilhete foi definido manualmente como cashout ou anulada.</p>}
       {pernas.length === 0 ? (
         <p className="muted">Sem palpite separado neste print.</p>
       ) : (
@@ -81,8 +114,10 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
               <label>Jogo
                 <input value={perna.jogo || ""} onChange={(e) => editarPerna(ordem, "jogo", e.target.value)} />
               </label>
-              <p className="muted">{corrigirTime(perna.jogo || bilhete.jogo || "")}</p>
               <p>{nomeMercado(perna.mercado)} {perna.odd_perna ? `· ${perna.odd_perna}` : ""}</p>
+              <label>Mercado
+                <input value={perna.mercado || ""} onChange={(e) => editarPerna(ordem, "mercado", e.target.value || null)} />
+              </label>
               <label>Odd da perna
                 <input type="number" step="0.01" value={perna.odd_perna ?? ""} onChange={(e) => editarPerna(ordem, "odd_perna", e.target.value === "" ? null : Number(e.target.value))} />
               </label>
