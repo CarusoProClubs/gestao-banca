@@ -3,7 +3,7 @@
 import { nomeMercado, nomeTipo } from "../lib/mercados";
 import { marcarPerna, statusDaPerna } from "../lib/resultado";
 import { lucroBilhete } from "../lib/types";
-import { rotuloSaldo } from "../lib/rotulos";
+import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -15,6 +15,11 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
   const lucro = lucroBilhete(bilhete);
   const multipla = pernas.length > 1;
 
+  function alternar(pernaOrdem, atual) {
+    const proximo = atual === "pendente" ? null : "pendente";
+    if (proximo === "pendente") onChange(marcarPerna(bilhete, pernaOrdem, "pendente"));
+  }
+
   return (
     <div className="modal" style={{ position: "relative", margin: "16px 0" }}>
       <p className="muted">
@@ -22,9 +27,11 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
       </p>
       <h3>{bilhete.titulo || bilhete.jogo || "Bilhete"}</h3>
       <p>
-        {money(bilhete.valor_apostado)} · odd {bilhete.odd_bilhete ?? "—"} · {bilhete.status_usuario}
+        {money(bilhete.valor_apostado)} · odd {bilhete.odd_bilhete ?? "—"} · {rotuloStatus(bilhete.status_usuario)}
       </p>
-      <p className={lucro >= 0 ? "ok" : "bad"}>{rotuloSaldo(bilhete, money(Math.abs(lucro)))}</p>
+      <p className={bilhete.status_usuario === "red" ? "bad" : bilhete.status_usuario === "green" ? "ok" : ""}>
+        {rotuloSaldo(bilhete, money(Math.abs(lucro)))}
+      </p>
       {multipla && <p className="muted">Um red em qualquer palpite fecha o bilhete como perdido.</p>}
       {pernas.length === 0 ? (
         <p className="muted">Sem palpite separado neste print.</p>
@@ -40,12 +47,20 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
                 {nomeMercado(perna.mercado)} {perna.odd_perna ? `· ${perna.odd_perna}` : ""}
               </p>
               <p>
-                <button className={status === "green" ? "green active" : "green"} onClick={() => onChange(marcarPerna(bilhete, ordem, "green"))}>
-                  Green
-                </button>{" "}
-                <button className={status === "red" ? "red active" : "red"} onClick={() => onChange(marcarPerna(bilhete, ordem, "red"))}>
-                  Red
-                </button>
+                {status === "pendente" ? (
+                  <>
+                    <button className="green" onClick={() => onChange(marcarPerna(bilhete, ordem, "green"))}>
+                      🟢 Green
+                    </button>{" "}
+                    <button className="red" onClick={() => onChange(marcarPerna(bilhete, ordem, "red"))}>
+                      🔴 Red
+                    </button>
+                  </>
+                ) : (
+                  <button className={status === "green" ? "green" : "red"} onClick={() => alternar(ordem, status)}>
+                    {rotuloStatus(status)}
+                  </button>
+                )}
               </p>
             </div>
           );
