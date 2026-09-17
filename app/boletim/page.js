@@ -8,7 +8,6 @@ import { textoLimpo } from "../../lib/texto-limpo";
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
   const arquivoRef = useRef(null);
-  const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseBoletimTxt(""));
   const [filtro, setFiltro] = useState("principais");
   const [aberto, setAberto] = useState(null);
@@ -17,11 +16,6 @@ export default function BoletimPage() {
   async function load() {
     const supabase = getSupabase();
     if (!supabase) return;
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData.user) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
-      setAdmin(profile?.role === "admin");
-    }
     const { data } = await supabase.from("boletim_txt").select("*").eq("data", hoje).limit(1);
     if (data?.[0]) setParsed(parseBoletimTxt(data[0].bruto || ""));
   }
@@ -50,17 +44,15 @@ export default function BoletimPage() {
 
   return (
     <section>
-      {admin && (
-        <section className="card">
-          <h2>TXT do boletim</h2>
-          <p>Sobe a newsletter no formato que você já escreve.</p>
-          <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
-          <p>
-            <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
-          </p>
-          <p>{msg}</p>
-        </section>
-      )}
+      <section className="card">
+        <h2>TXT do boletim</h2>
+        <p>Sobe a newsletter do dia.</p>
+        <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
+        <p>
+          <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
+        </p>
+        <p>{msg}</p>
+      </section>
 
       <section className="card">
         <h2>{textoLimpo(parsed.manchete) || "Boletim do dia"}</h2>
