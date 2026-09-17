@@ -18,31 +18,17 @@ function Tabela({ titulo, rows, vazio }) {
       <table>
         <thead>
           <tr>
-            <th>Grupo</th>
-            <th>Qtd</th>
-            <th>🟢 Green</th>
-            <th>🔴 Red</th>
-            <th>Acerto</th>
-            <th>Apostado</th>
-            <th>Lucro</th>
+            <th>Grupo</th><th>Qtd</th><th>🟢 Green</th><th>🔴 Red</th><th>🟡 Cashout</th><th>Acerto</th><th>Apostado</th><th>Lucro</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={7}>{vazio || "Sem dados ainda."}</td></tr>
-          ) : (
-            rows.map((row) => (
-              <tr key={row.nome}>
-                <td>{row.nome}</td>
-                <td>{row.qtd}</td>
-                <td className="ok">{row.green}</td>
-                <td className="bad">{row.red}</td>
-                <td>{pct(row.acerto)}</td>
-                <td>{money(row.apostado)}</td>
-                <td className={row.lucro >= 0 ? "ok" : "bad"}>{money(row.lucro)}</td>
-              </tr>
-            ))
-          )}
+            <tr><td colSpan={8}>{vazio || "Sem dados ainda."}</td></tr>
+          ) : rows.map((row) => (
+            <tr key={row.nome}>
+              <td>{row.nome}</td><td>{row.qtd}</td><td className="ok">{row.green}</td><td className="bad">{row.red}</td><td>{row.cashout}</td><td>{pct(row.acerto)}</td><td>{money(row.apostado)}</td><td className={row.lucro >= 0 ? "ok" : "bad"}>{money(row.lucro)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </section>
@@ -69,26 +55,14 @@ export default function AnalisePage() {
     <section>
       <p>Análise de todos os bilhetes deste perfil, sem recorte de data.</p>
       <div className="grid">
-        <article className="card">
-          <h2>Bilhetes</h2>
-          <strong>{analise.total}</strong>
-          <p>{analise.green} 🟢 · {analise.red} 🔴 · {analise.pendente} pendente</p>
-        </article>
-        <article className="card">
-          <h2>Acerto</h2>
-          <strong>{pct(analise.acerto)}</strong>
-        </article>
-        <article className="card">
-          <h2>ROI</h2>
-          <strong className={analise.roi >= 0 ? "ok" : "bad"}>{pct(analise.roi)}</strong>
-        </article>
-        <article className="card">
-          <h2>Lucro</h2>
-          <strong className={analise.lucro >= 0 ? "ok" : "bad"}>{money(analise.lucro)}</strong>
-        </article>
+        <article className="card"><h2>Bilhetes</h2><strong>{analise.total}</strong><p>{analise.green} 🟢 · {analise.red} 🔴 · {analise.cashout} 🟡 · {analise.pendente} pendente</p></article>
+        <article className="card"><h2>Acerto</h2><strong>{pct(analise.acerto)}</strong><p>Green/Red, sem contar cashout como acerto.</p></article>
+        <article className="card"><h2>ROI</h2><strong className={analise.roi >= 0 ? "ok" : "bad"}>{pct(analise.roi)}</strong></article>
+        <article className="card"><h2>Lucro</h2><strong className={analise.lucro >= 0 ? "ok" : "bad"}>{money(analise.lucro)}</strong></article>
       </div>
       <section className="card">
         <h2>Leitura rápida</h2>
+        <p>Cashouts: {analise.cashout} · Anuladas: {analise.anulada}</p>
         <p>Melhor mercado: {melhorMercado ? `${melhorMercado.nome} (${money(melhorMercado.lucro)})` : "—"}</p>
         <p>Pior mercado: {piorMercado ? `${piorMercado.nome} (${money(piorMercado.lucro)})` : "—"}</p>
         <p>Faixa de odd: {melhorFaixa ? `${melhorFaixa.nome} (${money(melhorFaixa.lucro)})` : "—"}</p>
