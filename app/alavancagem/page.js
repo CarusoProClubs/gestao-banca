@@ -28,7 +28,6 @@ function lerNiveis(valor) {
 export default function AlavancagemPage() {
   const semana = inicioSemana();
   const [tickets, setTickets] = useState([]);
-  const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
   const [niveis, setNiveis] = useState([]);
   const [valorSemana, setValorSemana] = useState("");
@@ -38,11 +37,6 @@ export default function AlavancagemPage() {
   async function load() {
     const supabase = getSupabase();
     if (!supabase) return;
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData.user) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", userData.user.id).single();
-      setAdmin(profile?.role === "admin");
-    }
     const { data: ticketRows } = await supabase.from("tickets").select("*");
     setTickets(ticketRows ?? []);
     const { data: txtRows } = await supabase.from("alavancagem_txt").select("*").eq("inicio", semana).limit(1);
@@ -102,13 +96,14 @@ export default function AlavancagemPage() {
 
   return (
     <section>
-      {admin && (
-        <section className="card">
-          <h2>TXT da semana</h2>
-          <p>Inclua META em cada nível (3x, 5x, 7x a 9x...).</p>
+      <section className="card">
+        <h2>TXT da semana</h2>
+        <p>Envie o arquivo com jogos e META de cada nível.</p>
+        <p>
           <input type="file" accept=".txt,text/plain" onChange={enviarTxt} />
-        </section>
-      )}
+        </p>
+        <p>{msg}</p>
+      </section>
 
       <section className="card">
         <h2>Valor inicial da semana</h2>
@@ -116,7 +111,6 @@ export default function AlavancagemPage() {
         <p>
           <button onClick={() => persistir(niveis, Number(String(valorSemana).replace(",", ".")) || 0)}>Salvar valor</button>
         </p>
-        <p>{msg}</p>
       </section>
 
       <div className="grid">
