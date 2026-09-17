@@ -177,7 +177,8 @@ export default function AlavancagemPage() {
       {aberto && (
         <section className="card">
           <h2>Jogos · {ROTULOS[aberto]} · Meta {parsed.metas?.[aberto] || "—"}</h2>
-          <p>Valor neste nível: {money(estado[aberto].valor)} · Banca agora: {money(contas[aberto].banca)}</p>
+          <p>Valor inicial: {money(estado[aberto].valor)} · Banca agora: {money(contas[aberto].banca)}</p>
+          <p className="muted">Green multiplica a banca pela odd. Um red perde só o valor inicial deste nível.</p>
           {jogosAbertos.length === 0 ? (
             <p>Ainda não há jogos neste nível.</p>
           ) : (
@@ -185,7 +186,10 @@ export default function AlavancagemPage() {
               <div className="leg" key={`${aberto}-${jogo.index}`}>
                 <strong>{jogo.jogo}</strong>
                 <p className="muted">{jogo.esporte} · {jogo.liga} · {jogo.data} {jogo.hora}</p>
-                <p>{jogo.mercado} · odd {jogo.odd}</p>
+                <p>{jogo.mercado} · odd {jogo.odd} · usa {money(jogo.stake)}</p>
+                {jogo.status === "green" && <p className="ok">Vira {money(jogo.retorno)}</p>}
+                {jogo.status === "red" && <p className="bad">Red: perde {money(estado[aberto].valor)} deste nível</p>}
+                {jogo.status === "fechado" && <p className="muted">Sequência encerrada</p>}
                 {jogo.motivo && <p>{jogo.motivo}</p>}
                 <p>
                   {jogo.status === "pendente" ? (
@@ -193,7 +197,7 @@ export default function AlavancagemPage() {
                       <button className="green" onClick={() => marcar(aberto, jogo.index, "green")}>🟢 Green</button>{" "}
                       <button className="red" onClick={() => marcar(aberto, jogo.index, "red")}>🔴 Red</button>
                     </>
-                  ) : (
+                  ) : jogo.status === "fechado" ? null : (
                     <button className={jogo.status === "green" ? "green" : "red"} onClick={() => marcar(aberto, jogo.index, jogo.status)}>
                       {jogo.status === "green" ? "🟢 Green" : "🔴 Red"}
                     </button>
