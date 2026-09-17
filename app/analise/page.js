@@ -1,0 +1,114 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { getSupabase } from "../../lib/supabase";
+import { resumirAnalise } from "../../lib/analise";
+import { filtrarBilhetes } from "../../lib/filtros";
+
+function money(value) {
+  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function pct(value) {
+  return `${(Number(value || 0) * 100).toFixed(1)}%`;
+}
+
+function Tabela({ titulo, rows }) {
+  return (
+    <section className="card">
+      <h2>{titulo}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Grupo</th>
+            <th>Qtd</th>
+            <th>Green</th>
+            <th>Red</th>
+            <th>Acerto</th>
+            <th>Apostado</th>
+            <th>Lucro</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={7}>Sem dados ainda.</td></tr>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.nome}>
+                <td>{row.nome}</td>
+                <td>{row.qtd}</td>
+                <td className="ok">{row.green}</td>
+                <td className="bad">{row.red}</td>
+                <td>{pct(row.acerto)}</td>
+                <td>{money(row.apostado)}</td>
+                <td className={row.lucro >= 0 ? "ok" : "bad"}>{money(row.lucro)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+export default function AnalisePage() {
+  const [tickets, setTickets] = useState([]);
+  const [periodo, setPeriodo] = useState("mes");
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    supabase.from("tickets").select("*").then(({ data }) => setTickets(data ?? []));
+  }, []);
+
+  const lista = useMemo(() => filtrarBilhetes(tickets, { periodo }), [tickets, periodo]);
+  const analise = useMemo(() => resumirAnalise(lista), [lista]);
+  const melhorMercado = analise.porMercado[0];
+  const piorMercado = [...analise.porMercado].sort((a, b) => a.lucro - b.lucro)[0];
+  const melhorFaixa = analise.porFaixaOdd[0];
+
+  return (
+    <section>
+      <div className="presets">
+        {[
+          ["mes", "Este mês"],
+          ["semana", "7 dias"],
+          ["semestre", "1 semestre"],
+          ["ano", "1 ano"],
+        ].map(([id, label]) => (
+          <button key={id} className={periodo === id ? "active" : ""} onClick={() => setPeriodo(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="grid">
+        <article className="card">
+          <h2>Bilhetes</h2>
+          <strong>{analise.total}</strong>
+          <p>{analise.green} green · {analise.red} red · {analise.pendente} pendente</p>
+        </article>
+        <article className="card">
+          <h2>Acerto</h2>
+          <strong>{pct(analise.acerto)}</strong>
+        </article>
+        <article className="card">
+          <h2>ROI</h2>
+          <strong className={analise.roi >= 0 ? "ok" : "bad"}>{pct(analise.roi)}</strong>
+        </article>
+        <article className="card">
+          <h2>Lucro</h2>
+          <strong className={analise.lucro >= 0 ? "ok" : "bad"}>{money(analise.lucro)}</strong>
+        </article>
+      </div>
+      <section className="card">
+        <h2>Leitura rápida</h2>
+        <p>Melhor mercado em lucro: {melhorMercado ? `${melhorMercado.nome} (${money(melhorMercado.lucro)})` : "—"}</p>
+        <p>Pior mercado em lucro: {piorMercado ? `${piorMercado.nome} (${money(piorMercado.lucro)})` : "—"}</p>
+        <p>Faixa de odd que mais lucrou: {melhorFaixa ? `${melhorFaixa.nome} (${money(melhorFaixa.lucro)})` : "—"}</p>
+      </section>
+      <Tabela titulo="Por mercado" rows={analise.porMercado} />
+      <Tabela titulo="Por faixa de odd" rows={analise.porFaixaOdd} />
+      <Tabela titulo="Por tipo de bilhete" rows={analise.porTipo} />
+      <Tabela titulo="Por casa" rows={analise.porCasa} />
+    </section>
+  );
+}

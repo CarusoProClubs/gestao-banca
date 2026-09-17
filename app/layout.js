@@ -11,7 +11,7 @@ export default function RootLayout({ children }) {
           <nav>
             <strong>Gestão de Banca</strong>
             <Link href="/">Painel</Link>
-            <Link href="/bilhetes">Bilhetes</Link>
+            <Link href="/analise">Análise</Link>
             <Link href="/importar">Enviar print</Link>
             <Link href="/config">Config</Link>
             <Link href="/login">Entrar</Link>
