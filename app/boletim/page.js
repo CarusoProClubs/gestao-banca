@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
 import { textoLimpo } from "../../lib/texto-limpo";
+import { chamadaJornal } from "../../lib/chamada-jornal";
 import "./boletim.css";
 
 function dataBonita(iso) {
@@ -80,16 +81,7 @@ export default function BoletimPage() {
 
       {resumoDestaques.length > 0 && (
         <section className="resumo">
-          <h2>Resumo do dia</h2>
-          <ol>
-            {resumoDestaques.map((jogo, index) => (
-              <li key={`resumo-${index}`}>
-                <strong>{jogo.jogo}</strong>
-                <span>{[jogo.esporte, jogo.liga, jogo.hora].filter(Boolean).join(" · ")}</span>
-                {jogo.noticia && <em>{textoLimpo(jogo.noticia)}</em>}
-              </li>
-            ))}
-          </ol>
+          <p className="chamada">{chamadaJornal(resumoDestaques)}</p>
         </section>
       )}
 
