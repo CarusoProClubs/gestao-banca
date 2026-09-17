@@ -11,15 +11,18 @@ function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-const ROTULOS = { segura: "Risco baixo", media: "Risco médio", alta: "Risco alto" };
+const ROTULOS = {
+  segura: { nome: "Risco baixo", detalhe: "3x a 5x o valor da semana" },
+  media: { nome: "Risco médio", detalhe: "7x a 9x o valor da semana" },
+  alta: { nome: "Risco alto", detalhe: "10x a 15x o valor da semana" },
+};
 
 export default function AlavancagemPage() {
   const semana = inicioSemana();
   const [tickets, setTickets] = useState([]);
   const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
-  const [nivel, setNivel] = useState("segura");
-  const [aberto, setAberto] = useState(null);
+  const [nivel, setNivel] = useState(null);
   const [valorSemana, setValorSemana] = useState("");
   const [metaId, setMetaId] = useState(null);
   const [msg, setMsg] = useState("");
@@ -39,7 +42,7 @@ export default function AlavancagemPage() {
     const { data: metas } = await supabase.from("alavancagem_metas").select("*").eq("inicio", semana).limit(1);
     if (metas?.[0]) {
       setMetaId(metas[0].id);
-      setNivel(metas[0].nivel || "segura");
+      setNivel(metas[0].nivel || null);
       setValorSemana(String(metas[0].valor_investido ?? ""));
     }
   }
@@ -53,7 +56,7 @@ export default function AlavancagemPage() {
   const apostado = daSemana.reduce((acc, t) => acc + Number(t.valor_apostado || 0), 0);
   const lucro = daSemana.reduce((acc, t) => acc + lucroBilhete(t), 0);
   const retorno = apostado + lucro;
-  const eventos = parsed.niveis?.[nivel] || [];
+  const jogos = nivel ? parsed.niveis?.[nivel] || [] : [];
 
   async function enviarTxt(event) {
     const file = event.target.files?.[0];
@@ -63,7 +66,26 @@ export default function AlavancagemPage() {
     setParsed(lido);
     const supabase = getSupabase();
     const { error } = await supabase.from("alavancagem_txt").upsert({ inicio: semana, bruto, parsed: lido });
-    setMsg(error ? error.message : `${lido.eventos.length} evento(s) publicados.`);
+    setMsg(error ? error.message : `${lido.eventos.length} jogo(s) publicados.`);
+  }
+
+  async function iniciarNivel(id) {
+    setNivel(id);
+    const supabase = getSupabase();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return setMsg("Entre em /login");
+    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", userData.user.id).single();
+    const payload = {
+      organization_id: profile.organization_id,
+      inicio: semana,
+      nivel: id,
+      valor_investido: base,
+    };
+    const { error } = metaId
+      ? await supabase.from("alavancagem_metas").update(payload).eq("id", metaId)
+      : await supabase.from("alavancagem_metas").insert(payload);
+    setMsg(error ? error.message : `Nível ${ROTULOS[id].nome} iniciado.`);
+    load();
   }
 
   async function salvarValor() {
@@ -74,10 +96,8 @@ export default function AlavancagemPage() {
     const payload = {
       organization_id: profile.organization_id,
       inicio: semana,
-      nivel,
+      nivel: nivel || "segura",
       valor_investido: base,
-      multiplo_min: null,
-      multiplo_max: null,
     };
     const { error } = metaId
       ? await supabase.from("alavancagem_metas").update(payload).eq("id", metaId)
@@ -91,13 +111,13 @@ export default function AlavancagemPage() {
       {admin && (
         <section className="card">
           <h2>TXT da semana</h2>
-          <p>Arquivo com os jogos separados por nível. O cliente escolhe o evento.</p>
+          <p>Sobe os jogos separados por nível. O cliente só vê os jogos do nível que iniciar.</p>
           <input type="file" accept=".txt,text/plain" onChange={enviarTxt} />
         </section>
       )}
 
       <section className="card">
-        <h2>Seu valor desta semana</h2>
+        <h2>Valor inicial da semana</h2>
         <input value={valorSemana} onChange={(e) => setValorSemana(e.target.value)} placeholder="Ex.: 100" />
         <p>
           <button onClick={salvarValor}>Salvar valor</button>
@@ -105,46 +125,40 @@ export default function AlavancagemPage() {
         <p>{msg}</p>
       </section>
 
-      <div className="presets">
-        {Object.entries(ROTULOS).map(([id, nome]) => (
-          <button key={id} className={nivel === id ? "active" : ""} onClick={() => { setNivel(id); setAberto(null); }}>
-            {nome} ({(parsed.niveis?.[id] || []).length})
-          </button>
+      <div className="grid">
+        {Object.entries(ROTULOS).map(([id, info]) => (
+          <article key={id} className="card" style={{ outline: nivel === id ? "2px solid #6ea8ff" : "none" }}>
+            <h2>{info.nome}</h2>
+            <p>{info.detalhe}</p>
+            <p>{(parsed.niveis?.[id] || []).length} jogo(s) disponíveis</p>
+            <p>
+              <button className={nivel === id ? "active" : ""} onClick={() => iniciarNivel(id)}>
+                {nivel === id ? "Nível em andamento" : "Iniciar este nível"}
+              </button>
+            </p>
+          </article>
         ))}
       </div>
 
-      <section className="card">
-        <h2>Eventos · {ROTULOS[nivel]}</h2>
-        {eventos.length === 0 ? (
-          <p>Nenhum evento neste nível para a semana.</p>
-        ) : (
-          eventos.map((evento, index) => (
-            <div className="leg" key={`${evento.jogo}-${index}`} onClick={() => setAberto(evento)} style={{ cursor: "pointer" }}>
-              <strong>{evento.jogo || evento.titulo || "Evento"}</strong>
-              <p className="muted">
-                {evento.esporte} {evento.liga ? `· ${evento.liga}` : ""} {evento.data ? `· ${evento.data}` : ""} {evento.hora || ""}
-              </p>
-              <p>{evento.mercado} {evento.odd ? `· odd ${evento.odd}` : ""}</p>
-            </div>
-          ))
-        )}
-      </section>
-
-      {aberto && (
-        <div className="overlay" onClick={() => setAberto(null)}>
-          <div className="modal" onClick={(event) => event.stopPropagation()}>
-            <p className="muted">{aberto.esporte} · {aberto.liga} · {ROTULOS[aberto.nivel]}</p>
-            <h3>{aberto.jogo}</h3>
-            <p>{aberto.data} {aberto.hora}</p>
-            <p>Mercado: {aberto.mercado}</p>
-            <p>Odd base: {aberto.odd || "—"}</p>
-            <p>{aberto.motivo}</p>
-            <p>Seu valor da semana: {money(base)}</p>
-            <p>
-              <button onClick={() => setAberto(null)}>Fechar</button>
-            </p>
-          </div>
-        </div>
+      {nivel && (
+        <section className="card">
+          <h2>Jogos para concluir a alavancagem · {ROTULOS[nivel].nome}</h2>
+          <p>Só entram as possibilidades que você marcou neste nível no TXT.</p>
+          {jogos.length === 0 ? (
+            <p>Ainda não há jogos neste nível.</p>
+          ) : (
+            jogos.map((jogo, index) => (
+              <div className="leg" key={`${jogo.jogo}-${index}`}>
+                <strong>{jogo.jogo}</strong>
+                <p className="muted">
+                  {jogo.esporte} · {jogo.liga} · {jogo.data} {jogo.hora}
+                </p>
+                <p>{jogo.mercado} · odd {jogo.odd || "—"}</p>
+                {jogo.motivo && <p>{jogo.motivo}</p>}
+              </div>
+            ))
+          )}
+        </section>
       )}
 
       <div className="grid">
