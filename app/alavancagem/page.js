@@ -15,6 +15,7 @@ const ROTULOS = {
   media: "Risco médio",
   alta: "Risco alto",
 };
+const RESULTADO_VAZIO = { segura: {}, media: {}, alta: {} };
 
 function estadoVazio() {
   return {
@@ -47,7 +48,7 @@ export default function AlavancagemPage() {
   const arquivoRef = useRef(null);
   const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
-  const [resultados, setResultados] = useState({ segura: {}, media: {}, alta: {} });
+  const [resultados, setResultados] = useState(RESULTADO_VAZIO);
   const [estado, setEstado] = useState(estadoVazio());
   const [aberto, setAberto] = useState(null);
   const [metaId, setMetaId] = useState(null);
@@ -67,7 +68,7 @@ export default function AlavancagemPage() {
       const lido = parseAlavancagemTxt(txtRows[0].bruto || "");
       setParsed(lido);
       setBrutoTxt(txtRows[0].bruto || "");
-      setResultados(txtRows[0].parsed?.resultados || { segura: {}, media: {}, alta: {} });
+      setResultados(txtRows[0].parsed?.resultados || RESULTADO_VAZIO);
     }
     const { data: metas } = await supabase.from("alavancagem_metas").select("*").eq("inicio", semana).limit(1);
     if (metas?.[0]) {
@@ -123,6 +124,11 @@ export default function AlavancagemPage() {
     if (!error) setResultados(proximo);
   }
 
+  async function zerarResultados() {
+    await salvarResultados(RESULTADO_VAZIO);
+    setMsg("Green e Red da semana foram apagados.");
+  }
+
   async function enviarTxt(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -134,8 +140,9 @@ export default function AlavancagemPage() {
     const { error } = await supabase.from("alavancagem_txt").upsert({
       inicio: semana,
       bruto,
-      parsed: { ...lido, resultados },
+      parsed: { ...lido, resultados: RESULTADO_VAZIO },
     });
+    setResultados(RESULTADO_VAZIO);
     setMsg(error ? error.message : `${lido.eventos.length} jogo(s) publicados.`);
   }
 
@@ -178,7 +185,8 @@ export default function AlavancagemPage() {
           <h2>TXT da semana</h2>
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
           <p>
-            <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar TXT</button>
+            <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar TXT</button>{" "}
+            <button className="red" onClick={zerarResultados}>Zerar Green/Red da semana</button>
           </p>
           <p>{msg}</p>
         </section>
