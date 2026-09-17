@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
 import { rotuloMercado } from "../../lib/mercado-texto";
-import { inicioSemana } from "../../lib/alavancagem";
 
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
