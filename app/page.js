@@ -60,6 +60,8 @@ export default function Page() {
       valor_apostado: fechado.valor_apostado,
       odd_bilhete: fechado.odd_bilhete,
       retorno_casa: fechado.retorno_casa,
+      valor_resgatado: fechado.valor_resgatado,
+      status_print: fechado.status_print || fechado.status_detectado || "pendente",
       status_usuario: fechado.status_usuario,
       lucro: fechado.lucro,
       payload: fechado.payload,
@@ -107,7 +109,7 @@ export default function Page() {
         <h2>Apostas do período</h2>
         <div className="filters">
           <div><p>Casa</p><select value={filtros.casa} onChange={(e) => setFiltros({ ...filtros, casa: e.target.value })}><option value="">Todas</option>{casas.map((casa) => <option key={casa} value={casa}>{casa}</option>)}</select></div>
-          <div><p>Status</p><select value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })}><option value="">Todos</option><option value="pendente">Pendente</option><option value="green">Green</option><option value="red">Red</option></select></div>
+          <div><p>Status</p><select value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })}><option value="">Todos</option><option value="pendente">Pendente</option><option value="green">Green</option><option value="red">Red</option><option value="cashout">Cashout</option><option value="anulada">Anulada</option></select></div>
           <div><p>Valor mín.</p><input value={filtros.valorMin} onChange={(e) => setFiltros({ ...filtros, valorMin: e.target.value })} /></div>
           <div><p>Valor máx.</p><input value={filtros.valorMax} onChange={(e) => setFiltros({ ...filtros, valorMax: e.target.value })} /></div>
           <div><p>Ordenar</p><select value={filtros.ordem} onChange={(e) => setFiltros({ ...filtros, ordem: e.target.value })}><option value="data_desc">Data (mais recente)</option><option value="odd_desc">Odd maior → menor</option><option value="odd_asc">Odd menor → maior</option><option value="valor_desc">Valor maior → menor</option><option value="valor_asc">Valor menor → maior</option></select></div>
