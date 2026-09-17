@@ -6,15 +6,18 @@ body.pagina-boletim {
     radial-gradient(38vw 90vh at 100% 50%, rgba(0, 255, 170, 0.28), transparent 68%);
   background-attachment: fixed;
 }
+
 body.pagina-boletim main {
   width: min(1120px, calc(100% - 48px));
 }
+
 .capa h1,
 .materia h3 {
   font-family: Fraunces, Georgia, serif;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
+
 .capa-selo {
   margin: 0 0 10px;
   font-size: 12px;
@@ -23,81 +26,143 @@ body.pagina-boletim main {
   color: #9ec9ff;
   font-weight: 700;
 }
+
 .capa h1 {
   margin: 0 0 14px;
   font-size: clamp(34px, 6vw, 64px);
   line-height: 0.95;
 }
+
 .capa-olho {
   font-family: "Source Serif 4", Georgia, serif;
-  font-size: 18px;
-  line-height: 1.45;
-  max-width: 62ch;
-  color: #d7e3f0;
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 72ch;
+  color: #bfcfe0;
 }
+
 .capa-abas {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 22px 0 10px;
 }
+
 .capa-admin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   color: #9ab0c9;
   font-size: 13px;
 }
+
 .resumo {
-  margin: 8px 0 6px;
+  margin: 22px 0 0;
+  padding: 0 0 4px;
 }
+
 .chamada {
   margin: 0;
   font-family: "Source Serif 4", Georgia, serif;
-  font-size: clamp(17px, 1.7vw, 22px);
+  font-size: clamp(18px, 1.9vw, 23px);
   font-weight: 400;
   line-height: 1.55;
   letter-spacing: 0;
-  color: #e8eef6;
-  max-width: 72ch;
+  color: #edf4fb;
+  max-width: 75ch;
 }
+
 .caderno {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px 56px;
   margin-top: 42px;
+  align-items: start;
 }
-@media (min-width: 900px) {
-  .caderno { columns: 2; column-gap: 56px; }
-}
+
 .materia {
-  break-inside: avoid;
-  margin: 0 0 34px;
+  min-width: 0;
+  padding-bottom: 6px;
 }
+
+.materia.destaque {
+  grid-column: 1 / -1;
+  padding: 28px 30px 30px;
+  border: 1px solid rgba(132, 194, 255, 0.20);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(17, 32, 48, 0.78), rgba(5, 15, 25, 0.58));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
 .materia-chapéu {
-  margin: 0 0 6px;
+  margin: 0 0 7px;
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #8fb7e8;
   font-weight: 700;
 }
+
 .materia h3 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  line-height: 1.1;
+  margin: 0 0 9px;
+  font-size: 29px;
+  line-height: 1.08;
   text-transform: none;
   color: #fff;
 }
+
+.materia.destaque h3 {
+  font-size: clamp(32px, 4vw, 46px);
+}
+
 .materia-linha,
 .materia-corpo {
   font-family: "Source Serif 4", Georgia, serif;
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: #d5e0ec;
 }
-.materia-corpo {
-  white-space: pre-wrap;
-  margin: 10px 0;
+
+.materia-linha {
+  margin: 0;
 }
+
+.materia-corpo {
+  margin: 12px 0 0;
+  white-space: pre-line;
+}
+
 button.texto {
+  margin-top: 12px;
   background: none;
   padding: 0;
   color: #7dffc7;
   font-size: 14px;
+  font-weight: 700;
 }
-.vazio { color: #9ab0c9; }
+
+button.texto:hover {
+  color: #b3ffe0;
+}
+
+.vazio {
+  color: #9ab0c9;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 899px) {
+  body.pagina-boletim main {
+    width: min(100% - 28px, 760px);
+  }
+
+  .caderno {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .materia.destaque {
+    grid-column: auto;
+    padding: 22px 20px 24px;
+  }
+}
