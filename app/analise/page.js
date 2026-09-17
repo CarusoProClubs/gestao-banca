@@ -62,6 +62,8 @@ export default function AnalisePage() {
   const melhorMercado = analise.porMercado[0];
   const piorMercado = [...analise.porMercado].sort((a, b) => a.lucro - b.lucro)[0];
   const melhorFaixa = analise.porFaixaOdd[0];
+  const melhorClube = analise.porClube[0];
+  const melhorJogador = analise.porJogador[0];
 
   return (
     <section>
@@ -87,14 +89,19 @@ export default function AnalisePage() {
       </div>
       <section className="card">
         <h2>Leitura rápida</h2>
-        <p>Melhor mercado em lucro: {melhorMercado ? `${melhorMercado.nome} (${money(melhorMercado.lucro)})` : "—"}</p>
-        <p>Pior mercado em lucro: {piorMercado ? `${piorMercado.nome} (${money(piorMercado.lucro)})` : "—"}</p>
-        <p>Faixa de odd que mais lucrou: {melhorFaixa ? `${melhorFaixa.nome} (${money(melhorFaixa.lucro)})` : "—"}</p>
+        <p>Melhor mercado: {melhorMercado ? `${melhorMercado.nome} (${money(melhorMercado.lucro)})` : "—"}</p>
+        <p>Pior mercado: {piorMercado ? `${piorMercado.nome} (${money(piorMercado.lucro)})` : "—"}</p>
+        <p>Faixa de odd: {melhorFaixa ? `${melhorFaixa.nome} (${money(melhorFaixa.lucro)})` : "—"}</p>
+        <p>Clube que mais lucrou: {melhorClube ? `${melhorClube.nome} (${money(melhorClube.lucro)})` : "—"}</p>
+        <p>Jogador que mais lucrou: {melhorJogador ? `${melhorJogador.nome} (${money(melhorJogador.lucro)})` : "—"}</p>
       </section>
       <Tabela titulo="Por mercado" rows={analise.porMercado} />
       <Tabela titulo="Por faixa de odd" rows={analise.porFaixaOdd} />
       <Tabela titulo="Por tipo de bilhete" rows={analise.porTipo} />
       <Tabela titulo="Por casa" rows={analise.porCasa} />
+      <Tabela titulo="Por liga" rows={analise.porLiga} />
+      <Tabela titulo="Por clube" rows={analise.porClube} />
+      <Tabela titulo="Por jogador" rows={analise.porJogador} />
     </section>
   );
 }
