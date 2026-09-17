@@ -17,12 +17,20 @@ const ROTULOS = {
   alta: { nome: "Risco alto", detalhe: "10x a 15x o valor da semana" },
 };
 
+function lerNiveis(valor) {
+  if (Array.isArray(valor)) return valor.filter(Boolean);
+  return String(valor || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => ROTULOS[item]);
+}
+
 export default function AlavancagemPage() {
   const semana = inicioSemana();
   const [tickets, setTickets] = useState([]);
   const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
-  const [nivel, setNivel] = useState(null);
+  const [niveis, setNiveis] = useState([]);
   const [valorSemana, setValorSemana] = useState("");
   const [metaId, setMetaId] = useState(null);
   const [msg, setMsg] = useState("");
@@ -42,7 +50,7 @@ export default function AlavancagemPage() {
     const { data: metas } = await supabase.from("alavancagem_metas").select("*").eq("inicio", semana).limit(1);
     if (metas?.[0]) {
       setMetaId(metas[0].id);
-      setNivel(metas[0].nivel || null);
+      setNiveis(lerNiveis(metas[0].nivel));
       setValorSemana(String(metas[0].valor_investido ?? ""));
     }
   }
@@ -56,7 +64,24 @@ export default function AlavancagemPage() {
   const apostado = daSemana.reduce((acc, t) => acc + Number(t.valor_apostado || 0), 0);
   const lucro = daSemana.reduce((acc, t) => acc + lucroBilhete(t), 0);
   const retorno = apostado + lucro;
-  const jogos = nivel ? parsed.niveis?.[nivel] || [] : [];
+
+  async function persistir(lista, valor = base) {
+    const supabase = getSupabase();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return setMsg("Entre em /login");
+    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", userData.user.id).single();
+    const payload = {
+      organization_id: profile.organization_id,
+      inicio: semana,
+      nivel: lista.join(","),
+      valor_investido: valor,
+    };
+    const { error } = metaId
+      ? await supabase.from("alavancagem_metas").update(payload).eq("id", metaId)
+      : await supabase.from("alavancagem_metas").insert(payload);
+    setMsg(error ? error.message : "Salvo");
+    load();
+  }
 
   async function enviarTxt(event) {
     const file = event.target.files?.[0];
@@ -69,41 +94,10 @@ export default function AlavancagemPage() {
     setMsg(error ? error.message : `${lido.eventos.length} jogo(s) publicados.`);
   }
 
-  async function iniciarNivel(id) {
-    setNivel(id);
-    const supabase = getSupabase();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return setMsg("Entre em /login");
-    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", userData.user.id).single();
-    const payload = {
-      organization_id: profile.organization_id,
-      inicio: semana,
-      nivel: id,
-      valor_investido: base,
-    };
-    const { error } = metaId
-      ? await supabase.from("alavancagem_metas").update(payload).eq("id", metaId)
-      : await supabase.from("alavancagem_metas").insert(payload);
-    setMsg(error ? error.message : `Nível ${ROTULOS[id].nome} iniciado.`);
-    load();
-  }
-
-  async function salvarValor() {
-    const supabase = getSupabase();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return setMsg("Entre em /login");
-    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", userData.user.id).single();
-    const payload = {
-      organization_id: profile.organization_id,
-      inicio: semana,
-      nivel: nivel || "segura",
-      valor_investido: base,
-    };
-    const { error } = metaId
-      ? await supabase.from("alavancagem_metas").update(payload).eq("id", metaId)
-      : await supabase.from("alavancagem_metas").insert(payload);
-    setMsg(error ? error.message : "Valor da semana salvo.");
-    load();
+  function alternarNivel(id) {
+    const lista = niveis.includes(id) ? niveis.filter((item) => item !== id) : [...niveis, id];
+    setNiveis(lista);
+    persistir(lista);
   }
 
   return (
@@ -111,7 +105,7 @@ export default function AlavancagemPage() {
       {admin && (
         <section className="card">
           <h2>TXT da semana</h2>
-          <p>Sobe os jogos separados por nível. O cliente só vê os jogos do nível que iniciar.</p>
+          <p>Sobe os jogos por nível. O cliente pode iniciar os três ao mesmo tempo.</p>
           <input type="file" accept=".txt,text/plain" onChange={enviarTxt} />
         </section>
       )}
@@ -120,35 +114,34 @@ export default function AlavancagemPage() {
         <h2>Valor inicial da semana</h2>
         <input value={valorSemana} onChange={(e) => setValorSemana(e.target.value)} placeholder="Ex.: 100" />
         <p>
-          <button onClick={salvarValor}>Salvar valor</button>
+          <button onClick={() => persistir(niveis, Number(String(valorSemana).replace(",", ".")) || 0)}>Salvar valor</button>
         </p>
         <p>{msg}</p>
       </section>
 
       <div className="grid">
         {Object.entries(ROTULOS).map(([id, info]) => (
-          <article key={id} className="card" style={{ outline: nivel === id ? "2px solid #6ea8ff" : "none" }}>
+          <article key={id} className="card" style={{ outline: niveis.includes(id) ? "2px solid #6ea8ff" : "none" }}>
             <h2>{info.nome}</h2>
             <p>{info.detalhe}</p>
             <p>{(parsed.niveis?.[id] || []).length} jogo(s) disponíveis</p>
             <p>
-              <button className={nivel === id ? "active" : ""} onClick={() => iniciarNivel(id)}>
-                {nivel === id ? "Nível em andamento" : "Iniciar este nível"}
+              <button className={niveis.includes(id) ? "active" : ""} onClick={() => alternarNivel(id)}>
+                {niveis.includes(id) ? "Nível ativo" : "Iniciar este nível"}
               </button>
             </p>
           </article>
         ))}
       </div>
 
-      {nivel && (
-        <section className="card">
-          <h2>Jogos para concluir a alavancagem · {ROTULOS[nivel].nome}</h2>
-          <p>Só entram as possibilidades que você marcou neste nível no TXT.</p>
-          {jogos.length === 0 ? (
+      {niveis.map((id) => (
+        <section className="card" key={id}>
+          <h2>Jogos · {ROTULOS[id].nome}</h2>
+          {(parsed.niveis?.[id] || []).length === 0 ? (
             <p>Ainda não há jogos neste nível.</p>
           ) : (
-            jogos.map((jogo, index) => (
-              <div className="leg" key={`${jogo.jogo}-${index}`}>
+            (parsed.niveis?.[id] || []).map((jogo, index) => (
+              <div className="leg" key={`${id}-${jogo.jogo}-${index}`}>
                 <strong>{jogo.jogo}</strong>
                 <p className="muted">
                   {jogo.esporte} · {jogo.liga} · {jogo.data} {jogo.hora}
@@ -159,7 +152,7 @@ export default function AlavancagemPage() {
             ))
           )}
         </section>
-      )}
+      ))}
 
       <div className="grid">
         <article className="card">
