@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
+import { textoLimpo } from "../../lib/texto-limpo";
 
 export default function BoletimPage() {
   const hoje = new Date().toISOString().slice(0, 10);
@@ -18,7 +19,7 @@ export default function BoletimPage() {
     if (!supabase) return;
     const { data: userData } = await supabase.auth.getUser();
     if (userData.user) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", userData.user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
       setAdmin(profile?.role === "admin");
     }
     const { data } = await supabase.from("boletim_txt").select("*").eq("data", hoje).limit(1);
@@ -62,8 +63,8 @@ export default function BoletimPage() {
       )}
 
       <section className="card">
-        <h2>{parsed.manchete || "Boletim do dia"}</h2>
-        {parsed.geral && <p>{parsed.geral}</p>}
+        <h2>{textoLimpo(parsed.manchete) || "Boletim do dia"}</h2>
+        {parsed.geral && <p>{textoLimpo(parsed.geral)}</p>}
         <div className="presets">
           <button className={filtro === "principais" ? "active" : ""} onClick={() => setFiltro("principais")}>
             Principais
@@ -91,10 +92,10 @@ export default function BoletimPage() {
             <p className="muted">
               {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.hora || ""}
             </p>
-            {jogo.noticia && <p>{jogo.noticia}</p>}
+            {jogo.noticia && <p>{textoLimpo(jogo.noticia)}</p>}
             {aberto === index ? (
               <>
-                <p style={{ whiteSpace: "pre-wrap" }}>{jogo.detalhe}</p>
+                <p style={{ whiteSpace: "pre-wrap" }}>{textoLimpo(jogo.detalhe)}</p>
                 <p><button onClick={() => setAberto(null)}>Fechar detalhe</button></p>
               </>
             ) : (
