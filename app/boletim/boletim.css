@@ -1,0 +1,9 @@
+body.pagina-boletim .bg {
+  background-image: url("/fundodiario.jpg");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: auto 100%;
+}
+body.pagina-boletim .bg::after {
+  opacity: 0;
+}
