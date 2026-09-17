@@ -1,92 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
+import { salvarBilhete } from "../../lib/tickets";
+
+function money(value) {
+  if (value == null) return "—";
+  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 export default function ImportarPage() {
-  const [raw, setRaw] = useState("");
   const [msg, setMsg] = useState("");
+  const [job, setJob] = useState(null);
+  const [bilhete, setBilhete] = useState(null);
 
-  async function lancar() {
+  useEffect(() => {
+    if (!job || job.status !== "lendo") return;
     const supabase = getSupabase();
-    if (!supabase) return setMsg("Supabase não configurado");
-    let json;
-    try {
-      json = JSON.parse(raw);
-    } catch {
-      setMsg("JSON inválido");
-      return;
-    }
+    const timer = setInterval(async () => {
+      const { data } = await supabase.from("ticket_jobs").select("*").eq("id", job.id).single();
+      if (!data) return;
+      setJob(data);
+      if (data.status === "pronto" && data.payload) setBilhete(data.payload);
+      if (data.status === "erro") setMsg(data.error || "Falha na leitura");
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [job]);
+
+  async function enviarPrint(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const supabase = getSupabase();
     const { data: sessionData } = await supabase.auth.getUser();
-    if (!sessionData.user) {
-      setMsg("Entre em /login primeiro");
-      return;
-    }
+    if (!sessionData.user) return setMsg("Entre em /login primeiro");
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("organization_id")
       .eq("id", sessionData.user.id)
       .single();
-    if (profileError || !profile) {
-      setMsg("Perfil não encontrado. Crie a conta de novo depois do SQL do trigger.");
-      return;
-    }
-    const ticket = {
-      organization_id: profile.organization_id,
-      created_by: sessionData.user.id,
-      casa: json.casa ?? null,
-      id_casa: json.id_casa ?? null,
-      codigo_booking: json.codigo_booking ?? null,
-      data_hora: json.data_hora ?? null,
-      tipo: json.tipo ?? null,
-      formato: json.formato ?? null,
-      titulo: json.titulo ?? null,
-      valor_apostado: json.valor_apostado ?? null,
-      moeda: json.moeda ?? "BRL",
-      odd_bilhete: json.odd_bilhete ?? null,
-      retorno_casa: json.retorno_casa ?? null,
-      status_print: json.status_print ?? "pendente",
-      status_usuario: "pendente",
-      esporte: json.esporte ?? null,
-      jogo: json.jogo ?? null,
-      payload: json,
-    };
-    const { data: saved, error } = await supabase.from("tickets").insert(ticket).select("id").single();
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-    const legs = Array.isArray(json.pernas) ? json.pernas : [];
-    if (legs.length) {
-      const rows = legs.map((perna, index) => ({
+    if (profileError || !profile) return setMsg("Perfil não encontrado");
+
+    setMsg("Enviando print...");
+    setBilhete(null);
+    const path = `${profile.organization_id}/${Date.now()}-${file.name}`;
+    const { error: upError } = await supabase.storage.from("prints").upload(path, file, {
+      contentType: file.type || "image/png",
+      upsert: false,
+    });
+    if (upError) return setMsg(upError.message);
+
+    const { data: created, error } = await supabase
+      .from("ticket_jobs")
+      .insert({
         organization_id: profile.organization_id,
-        ticket_id: saved.id,
-        ordem: perna.ordem ?? index + 1,
-        jogo: perna.jogo ?? null,
-        selecao: perna.selecao ?? null,
-        mercado: perna.mercado ?? null,
-        odd_perna: perna.odd_perna ?? null,
-        placar_print: perna.placar_print ?? null,
-        status_print: perna.status_print ?? "desconhecido",
-      }));
-      const { error: legError } = await supabase.from("ticket_legs").insert(rows);
-      if (legError) {
-        setMsg("Bilhete salvo, pernas com erro: " + legError.message);
-        return;
-      }
-    }
-    setMsg("Bilhete lançado. Veja em Bilhetes.");
-    setRaw("");
+        created_by: sessionData.user.id,
+        status: "lendo",
+        image_path: path,
+      })
+      .select("*")
+      .single();
+    if (error) return setMsg(error.message);
+    setJob(created);
+    setMsg("Print com o leitor. Conferindo o bilhete...");
+  }
+
+  async function confirmar() {
+    const supabase = getSupabase();
+    const { data: sessionData } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", sessionData.user.id)
+      .single();
+    const result = await salvarBilhete(supabase, profile, sessionData.user.id, bilhete);
+    if (result.error) return setMsg(result.error.message);
+    setMsg("Bilhete confirmado. Veja em Bilhetes.");
+    setBilhete(null);
+    setJob(null);
   }
 
   return (
     <section className="card">
-      <h2>Importar JSON do bot</h2>
-      <p>Cole o JSON que o @LeitorBilheteBot devolveu. 1 JSON = 1 bilhete.</p>
-      <textarea rows={18} value={raw} onChange={(e) => setRaw(e.target.value)} placeholder='{"versao":"1.0","casa":"Betano"}' />
+      <h2>Enviar print</h2>
+      <p>Sobe o print do bilhete. O leitor devolve os dados aqui. Você só confirma ou edita.</p>
       <p>
-        <button onClick={lancar}>Lançar bilhete</button>
+        <input type="file" accept="image/*" onChange={enviarPrint} />
       </p>
+      {job?.status === "lendo" && <p>Lendo o print...</p>}
+      {bilhete && (
+        <div>
+          <p>
+            <strong>
+              {bilhete.casa} · {bilhete.tipo} · {bilhete.formato}
+            </strong>
+          </p>
+          <p>ID: {bilhete.id_casa ?? "—"}</p>
+          <p>Título: {bilhete.titulo ?? "—"}</p>
+          <p>Valor: {money(bilhete.valor_apostado)}</p>
+          <p>Odd: {bilhete.odd_bilhete ?? "—"}</p>
+          <p>Ganhos no print: {money(bilhete.retorno_casa)}</p>
+          <p>Status no print: {bilhete.status_print}</p>
+          <p>Pernas:</p>
+          <ul>
+            {(bilhete.pernas || []).map((perna) => (
+              <li key={perna.ordem}>
+                {perna.selecao} · {perna.mercado} {perna.odd_perna ?? ""}
+              </li>
+            ))}
+          </ul>
+          <p>
+            <button className="green" onClick={confirmar}>
+              Confirmar
+            </button>
+          </p>
+        </div>
+      )}
       <p>{msg}</p>
     </section>
   );
