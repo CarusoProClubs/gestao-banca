@@ -6,6 +6,7 @@ import { exposicaoPendente, lucroBilhete } from "../lib/types";
 import { filtrarBilhetes } from "../lib/filtros";
 import { limitesSalario, orcamentoDoPeriodo, termometroFamiliar } from "../lib/periodo";
 import { fecharBilhete } from "../lib/resultado";
+import { rotuloSaldo } from "../lib/rotulos";
 import BilheteCard from "../components/BilheteCard";
 
 function money(value) {
@@ -182,7 +183,7 @@ export default function Page() {
               <th>Valor</th>
               <th>Odd</th>
               <th>Status</th>
-              <th>Saldo</th>
+              <th>Resultado</th>
             </tr>
           </thead>
           <tbody>
@@ -197,7 +198,9 @@ export default function Page() {
                   <td>{money(ticket.valor_apostado)}</td>
                   <td>{ticket.odd_bilhete ?? "—"}</td>
                   <td>{ticket.status_usuario}</td>
-                  <td className={lucroBilhete(ticket) >= 0 ? "ok" : "bad"}>{money(lucroBilhete(ticket))}</td>
+                  <td className={ticket.status_usuario === "red" ? "bad" : ticket.status_usuario === "green" ? "ok" : ""}>
+                    {rotuloSaldo(ticket, money(Math.abs(lucroBilhete(ticket))))}
+                  </td>
                 </tr>
               ))
             )}
