@@ -1,52 +1,69 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
+import { parseBoletimTxt } from "../../lib/boletim-txt";
 import { rotuloMercado } from "../../lib/mercado-texto";
-
-function esporteDe(item) {
-  return (item.esporte || item.titulo || "").split(" · ")[0].trim() || "Outros";
-}
-
-function principalDe(item) {
-  return item.nivel === "principal" || item.destaque === true;
-}
+import { inicioSemana } from "../../lib/alavancagem";
 
 export default function BoletimPage() {
-  const [boletim, setBoletim] = useState([]);
-  const [admin, setAdmin] = useState(false);
-  const [filtro, setFiltro] = useState("principais");
   const hoje = new Date().toISOString().slice(0, 10);
+  const arquivoRef = useRef(null);
+  const [admin, setAdmin] = useState(false);
+  const [parsed, setParsed] = useState(parseBoletimTxt(""));
+  const [filtro, setFiltro] = useState("principais");
+  const [msg, setMsg] = useState("");
 
-  useEffect(() => {
+  async function load() {
     const supabase = getSupabase();
     if (!supabase) return;
-    supabase.from("daily_entries").select("*").eq("data", hoje).order("created_at", { ascending: true }).then(({ data }) => setBoletim(data ?? []));
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", userData.user.id).single();
       setAdmin(profile?.role === "admin");
-    });
-  }, [hoje]);
+    }
+    const { data } = await supabase.from("boletim_txt").select("*").eq("data", hoje).limit(1);
+    if (data?.[0]) setParsed(parseBoletimTxt(data[0].bruto || ""));
+  }
 
-  const esportes = useMemo(
-    () => [...new Set(boletim.map(esporteDe).filter(Boolean))],
-    [boletim],
-  );
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function enviarTxt(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const bruto = await file.text();
+    const lido = parseBoletimTxt(bruto);
+    setParsed(lido);
+    const supabase = getSupabase();
+    const { error } = await supabase.from("boletim_txt").upsert({ data: hoje, bruto, parsed: lido });
+    setMsg(error ? error.message : "Boletim do dia publicado.");
+  }
 
   const lista = useMemo(() => {
-    if (filtro === "principais") return boletim.filter(principalDe);
-    if (filtro === "todos") return boletim;
-    return boletim.filter((item) => esporteDe(item).toLowerCase() === filtro.toLowerCase());
-  }, [boletim, filtro]);
+    const jogos = parsed.jogos || [];
+    if (filtro === "principais") return jogos.filter((j) => j.principal);
+    if (filtro === "todos" || filtro === "geral") return jogos;
+    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
+  }, [parsed, filtro]);
 
   return (
     <section>
+      {admin && (
+        <section className="card">
+          <h2>TXT do boletim</h2>
+          <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
+          <p>
+            <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
+          </p>
+          <p>{msg}</p>
+        </section>
+      )}
+
       <section className="card">
-        <h2>Boletim do dia</h2>
-        <p>Os destaques abrem primeiro. Use o filtro se quiser um esporte só.</p>
-        {admin && <p><Link href="/boletim/publicar">Montar o boletim de hoje</Link></p>}
+        <h2>{parsed.manchete || "Boletim do dia"}</h2>
+        {parsed.geral && <p>{parsed.geral}</p>}
         <div className="presets">
           <button className={filtro === "principais" ? "active" : ""} onClick={() => setFiltro("principais")}>
             Principais
@@ -54,7 +71,7 @@ export default function BoletimPage() {
           <button className={filtro === "todos" ? "active" : ""} onClick={() => setFiltro("todos")}>
             Todos
           </button>
-          {esportes.map((esporte) => (
+          {(parsed.esportes || []).map((esporte) => (
             <button key={esporte} className={filtro.toLowerCase() === esporte.toLowerCase() ? "active" : ""} onClick={() => setFiltro(esporte)}>
               {esporte}
             </button>
@@ -64,21 +81,19 @@ export default function BoletimPage() {
 
       {lista.length === 0 ? (
         <section className="card">
-          <p>{filtro === "principais" ? "Nenhum destaque publicado hoje." : "Nenhum jogo neste filtro."}</p>
+          <p>{parsed.jogos?.length ? "Nenhum jogo neste filtro." : "O boletim de hoje ainda não foi enviado."}</p>
         </section>
       ) : (
-        lista.map((item) => (
-          <article className="card" key={item.id}>
-            {principalDe(item) && <p className="ok">Destaque</p>}
-            <h2>{item.evento || item.titulo}</h2>
+        lista.map((jogo, index) => (
+          <article className="card" key={`${jogo.jogo}-${index}`}>
+            {jogo.principal && <p className="ok">Principal</p>}
+            <h2>{jogo.jogo}</h2>
             <p className="muted">
-              {esporteDe(item)}
-              {item.liga ? ` · ${item.liga}` : ""}
-              {item.hora ? ` · ${item.hora}` : ""}
-              {!item.liga && item.titulo?.includes("·") ? ` · ${item.titulo}` : ""}
+              {jogo.esporte} {jogo.liga ? `· ${jogo.liga}` : ""} {jogo.data ? `· ${jogo.data}` : ""} {jogo.hora || ""}
             </p>
-            <p>{rotuloMercado(item.mercado, item.evento)} {item.odd_sugerida ? `· odd ${item.odd_sugerida}` : ""}</p>
-            {item.motivo && <p>{item.motivo}</p>}
+            <p>{rotuloMercado(jogo.mercado, jogo.jogo)} {jogo.odd ? `· odd ${jogo.odd}` : ""}</p>
+            {jogo.noticia && <p>{jogo.noticia}</p>}
+            {jogo.detalhe && <p className="muted">{jogo.detalhe}</p>}
           </article>
         ))
       )}
