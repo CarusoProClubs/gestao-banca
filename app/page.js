@@ -6,8 +6,10 @@ import { exposicaoPendente, lucroBilhete } from "../lib/types";
 import { filtrarBilhetes } from "../lib/filtros";
 import { limitesSalario, orcamentoDoPeriodo, termometroFamiliar } from "../lib/periodo";
 import { fecharBilhete } from "../lib/resultado";
-import { rotuloSaldo } from "../lib/rotulos";
+import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
+import { regrasSugeridas } from "../lib/disciplina";
 import BilheteCard from "../components/BilheteCard";
+import Disciplina from "../components/Disciplina";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -62,6 +64,7 @@ export default function Page() {
   const lucro = lista.reduce((acc, ticket) => acc + lucroBilhete(ticket), 0);
   const pendente = exposicaoPendente(lista);
   const termo = termometroFamiliar({ lucro, pendente, orcamento });
+  const { regras, seq } = useMemo(() => regrasSugeridas(tickets, termo, orcamento), [tickets, termo, orcamento]);
   const casas = [...new Set(tickets.map((t) => t.casa).filter(Boolean))];
 
   async function gravar(ticket) {
@@ -134,6 +137,8 @@ export default function Page() {
         </article>
       </div>
 
+      <Disciplina termo={termo} seq={seq} regras={regras} />
+
       <section className="card">
         <h2>Apostas do período</h2>
         <div className="filters">
@@ -197,7 +202,7 @@ export default function Page() {
                   <td>{ticket.titulo ?? ticket.jogo ?? "—"}</td>
                   <td>{money(ticket.valor_apostado)}</td>
                   <td>{ticket.odd_bilhete ?? "—"}</td>
-                  <td>{ticket.status_usuario}</td>
+                  <td>{rotuloStatus(ticket.status_usuario)}</td>
                   <td className={ticket.status_usuario === "red" ? "bad" : ticket.status_usuario === "green" ? "ok" : ""}>
                     {rotuloSaldo(ticket, money(Math.abs(lucroBilhete(ticket))))}
                   </td>
