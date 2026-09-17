@@ -11,7 +11,7 @@ function pct(value) {
   return `${(Number(value || 0) * 100).toFixed(1)}%`;
 }
 
-function Tabela({ titulo, rows }) {
+function Tabela({ titulo, rows, vazio }) {
   return (
     <section className="card">
       <h2>{titulo}</h2>
@@ -29,7 +29,7 @@ function Tabela({ titulo, rows }) {
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={7}>Sem dados ainda.</td></tr>
+            <tr><td colSpan={7}>{vazio || "Sem dados ainda."}</td></tr>
           ) : (
             rows.map((row) => (
               <tr key={row.nome}>
@@ -62,8 +62,8 @@ export default function AnalisePage() {
   const melhorMercado = analise.porMercado[0];
   const piorMercado = [...analise.porMercado].sort((a, b) => a.lucro - b.lucro)[0];
   const melhorFaixa = analise.porFaixaOdd[0];
-  const melhorClube = analise.porClube[0];
-  const melhorJogador = analise.porJogador[0];
+  const melhorClube = analise.porClube.find((row) => row.lucro > 0);
+  const melhorJogador = analise.porJogador.find((row) => row.green > 0 && row.lucro > 0);
 
   return (
     <section>
@@ -92,16 +92,16 @@ export default function AnalisePage() {
         <p>Melhor mercado: {melhorMercado ? `${melhorMercado.nome} (${money(melhorMercado.lucro)})` : "—"}</p>
         <p>Pior mercado: {piorMercado ? `${piorMercado.nome} (${money(piorMercado.lucro)})` : "—"}</p>
         <p>Faixa de odd: {melhorFaixa ? `${melhorFaixa.nome} (${money(melhorFaixa.lucro)})` : "—"}</p>
-        <p>Clube que mais lucrou: {melhorClube ? `${melhorClube.nome} (${money(melhorClube.lucro)})` : "—"}</p>
-        <p>Jogador que mais lucrou: {melhorJogador ? `${melhorJogador.nome} (${money(melhorJogador.lucro)})` : "—"}</p>
+        <p>Clube que mais lucrou: {melhorClube ? `${melhorClube.nome} (${money(melhorClube.lucro)})` : "Ainda sem lucro associado a um clube."}</p>
+        <p>Jogador que mais lucrou: {melhorJogador ? `${melhorJogador.nome} (${money(melhorJogador.lucro)})` : "Até agora nenhum green em palpite de jogador."}</p>
       </section>
       <Tabela titulo="Por mercado" rows={analise.porMercado} />
       <Tabela titulo="Por faixa de odd" rows={analise.porFaixaOdd} />
       <Tabela titulo="Por tipo de bilhete" rows={analise.porTipo} />
       <Tabela titulo="Por casa" rows={analise.porCasa} />
-      <Tabela titulo="Por liga" rows={analise.porLiga} />
+      <Tabela titulo="Por liga" rows={analise.porLiga} vazio="Nenhum print trouxe o nome da liga." />
       <Tabela titulo="Por clube" rows={analise.porClube} />
-      <Tabela titulo="Por jogador" rows={analise.porJogador} />
+      <Tabela titulo="Por jogador" rows={analise.porJogador} vazio="Nenhum palpite de jogador identificado ainda." />
     </section>
   );
 }
