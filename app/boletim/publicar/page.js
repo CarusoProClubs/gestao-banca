@@ -12,6 +12,7 @@ const VAZIO = {
   mercado: "",
   odd_sugerida: "",
   motivo: "",
+  principal: true,
 };
 
 export default function PublicarBoletimPage() {
@@ -38,7 +39,7 @@ export default function PublicarBoletimPage() {
       evento: form.evento,
       mercado: form.mercado,
       odd_sugerida: form.odd_sugerida ? Number(String(form.odd_sugerida).replace(",", ".")) : null,
-      nivel: "boletim",
+      nivel: form.principal ? "principal" : "boletim",
       motivo: form.motivo,
     });
     setMsg(error ? error.message : "Jogo publicado no boletim.");
@@ -57,7 +58,7 @@ export default function PublicarBoletimPage() {
   return (
     <section className="card">
       <h2>Montar boletim do dia</h2>
-      <p>Um jogo de cada vez. Qualquer esporte. Não precisa estar na alavancagem da semana.</p>
+      <p>Marque como principal o que deve aparecer na abertura da tela.</p>
       <p>Data</p>
       <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
       <p>Esporte</p>
@@ -75,13 +76,19 @@ export default function PublicarBoletimPage() {
       <p>Por que entra hoje</p>
       <textarea rows={3} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} />
       <p>
+        <label>
+          <input type="checkbox" checked={form.principal} onChange={(e) => setForm({ ...form, principal: e.target.checked })} />{" "}
+          Evento principal (aparece na abertura)
+        </label>
+      </p>
+      <p>
         <button className="green" onClick={salvar}>Adicionar ao boletim</button>
       </p>
       <p>{msg}</p>
       <h2>Já no boletim deste dia</h2>
       {lista.map((item) => (
         <p key={item.id}>
-          {item.evento} · {item.mercado}{" "}
+          {item.nivel === "principal" ? "Destaque · " : ""}{item.evento} · {item.mercado}{" "}
           <button className="red" onClick={() => apagar(item.id)}>Apagar</button>
         </p>
       ))}
