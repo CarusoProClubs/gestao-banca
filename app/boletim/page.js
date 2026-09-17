@@ -21,7 +21,9 @@ export default function BoletimPage() {
   }
 
   useEffect(() => {
+    document.body.classList.add("pagina-boletim");
     load();
+    return () => document.body.classList.remove("pagina-boletim");
   }, []);
 
   async function enviarTxt(event) {
