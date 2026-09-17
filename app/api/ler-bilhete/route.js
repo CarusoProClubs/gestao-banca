@@ -5,6 +5,7 @@ import { validarResultadosBilhete } from "../../../lib/validar-aposta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function supabaseAdminless() {
   return createClient(
@@ -28,9 +29,18 @@ export async function POST(request) {
     const files = form.getAll("files").filter((file) => file && typeof file.arrayBuffer === "function");
     if (!files.length) return NextResponse.json({ error: "Selecione pelo menos uma imagem." }, { status: 400 });
 
+    // A leitura visual é a etapa crítica e precisa devolver o bilhete assim que o Gemini terminar.
+    // A validação esportiva faz consultas externas + uma segunda chamada ao Gemini e não deve
+    // bloquear a apresentação do resultado do print.
     const leitura = await interpretarBilhete(files);
+
+    const validar = new URL(request.url).searchParams.get("validar") === "1";
+    if (!validar) {
+      return NextResponse.json({ ok: true, bilhete: leitura, validacao_pendente: true });
+    }
+
     const result = await validarResultadosBilhete(leitura);
-    return NextResponse.json({ ok: true, bilhete: result });
+    return NextResponse.json({ ok: true, bilhete: result, validacao_pendente: false });
   } catch (error) {
     console.error("[ler-bilhete]", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Falha ao interpretar o bilhete." }, { status: 500 });
