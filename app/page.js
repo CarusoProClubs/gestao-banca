@@ -69,6 +69,22 @@ export default function Page() {
     await load();
   }
 
+  async function excluir(ticket) {
+    const identificacao = ticket.titulo || ticket.casa || ticket.id_casa || "este bilhete";
+    const confirmado = window.confirm(`Excluir ${identificacao}?\n\nO bilhete e todos os seus palpites serão removidos e essa ação não pode ser desfeita.`);
+    if (!confirmado) return;
+
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const { error } = await supabase.from("tickets").delete().eq("id", ticket.id);
+    if (error) {
+      window.alert(`Não foi possível excluir o bilhete: ${error.message}`);
+      return;
+    }
+    setAberto(null);
+    await load();
+  }
+
   return (
     <section>
       <div className="presets">
@@ -102,7 +118,7 @@ export default function Page() {
           </tr>)}
         </tbody></table>
       </section>
-      {aberto && <div className="overlay" onClick={() => setAberto(null)}><div onClick={(event) => event.stopPropagation()}><BilheteCard bilhete={aberto} onChange={setAberto} onConfirm={() => gravar(aberto)} onClose={() => setAberto(null)} confirmarLabel="Salvar correções" /></div></div>}
+      {aberto && <div className="overlay" onClick={() => setAberto(null)}><div onClick={(event) => event.stopPropagation()}><BilheteCard bilhete={aberto} onChange={setAberto} onConfirm={() => gravar(aberto)} onDelete={() => excluir(aberto)} onClose={() => setAberto(null)} confirmarLabel="Salvar correções" /></div></div>}
     </section>
   );
 }
