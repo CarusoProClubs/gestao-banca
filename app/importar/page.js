@@ -85,7 +85,7 @@ export default function ImportarPage() {
           {lendo ? "Analisando..." : "🔎 Analisar bilhete"}
         </button>
       </p>
-      {lendo && <p>Lendo visualmente a aposta, relacionando eventos e validando os dados...</p>}
+      {lendo && <p>Analisando visualmente a aposta e relacionando os dados dos prints...</p>}
       {bilhete && <BilheteCard bilhete={bilhete} onChange={setBilhete} onConfirm={confirmar} confirmarLabel="Confirmar bilhete" />}
       <p>{msg}</p>
     </section>
