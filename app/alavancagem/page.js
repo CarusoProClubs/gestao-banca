@@ -12,9 +12,9 @@ function money(value) {
 }
 
 const ROTULOS = {
-  segura: { nome: "Risco baixo", detalhe: "3x a 5x o valor da semana" },
-  media: { nome: "Risco médio", detalhe: "7x a 9x o valor da semana" },
-  alta: { nome: "Risco alto", detalhe: "10x a 15x o valor da semana" },
+  segura: { nome: "Risco baixo" },
+  media: { nome: "Risco médio" },
+  alta: { nome: "Risco alto" },
 };
 
 function lerNiveis(valor) {
@@ -105,7 +105,7 @@ export default function AlavancagemPage() {
       {admin && (
         <section className="card">
           <h2>TXT da semana</h2>
-          <p>Sobe os jogos por nível. O cliente pode iniciar os três ao mesmo tempo.</p>
+          <p>Inclua META em cada nível (3x, 5x, 7x a 9x...).</p>
           <input type="file" accept=".txt,text/plain" onChange={enviarTxt} />
         </section>
       )}
@@ -123,7 +123,7 @@ export default function AlavancagemPage() {
         {Object.entries(ROTULOS).map(([id, info]) => (
           <article key={id} className="card" style={{ outline: niveis.includes(id) ? "2px solid #6ea8ff" : "none" }}>
             <h2>{info.nome}</h2>
-            <p>{info.detalhe}</p>
+            <p>Meta: {parsed.metas?.[id] || "ainda não veio no TXT"}</p>
             <p>{(parsed.niveis?.[id] || []).length} jogo(s) disponíveis</p>
             <p>
               <button className={niveis.includes(id) ? "active" : ""} onClick={() => alternarNivel(id)}>
@@ -136,7 +136,7 @@ export default function AlavancagemPage() {
 
       {niveis.map((id) => (
         <section className="card" key={id}>
-          <h2>Jogos · {ROTULOS[id].nome}</h2>
+          <h2>Jogos · {ROTULOS[id].nome} · Meta {parsed.metas?.[id] || "—"}</h2>
           {(parsed.niveis?.[id] || []).length === 0 ? (
             <p>Ainda não há jogos neste nível.</p>
           ) : (
