@@ -4,6 +4,7 @@ import { nomeMercado, nomeTipo } from "../lib/mercados";
 import { marcarPerna, statusDaPerna } from "../lib/resultado";
 import { lucroBilhete } from "../lib/types";
 import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
+import { corrigirTime } from "../lib/times";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -16,8 +17,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
   const multipla = pernas.length > 1;
 
   function alternar(pernaOrdem, atual) {
-    const proximo = atual === "pendente" ? null : "pendente";
-    if (proximo === "pendente") onChange(marcarPerna(bilhete, pernaOrdem, "pendente"));
+    if (atual !== "pendente") onChange(marcarPerna(bilhete, pernaOrdem, "pendente"));
   }
 
   return (
@@ -25,7 +25,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
       <p className="muted">
         {bilhete.casa} · {nomeTipo(bilhete.tipo, bilhete.formato)} · ID {bilhete.id_casa ?? "—"}
       </p>
-      <h3>{bilhete.titulo || bilhete.jogo || "Bilhete"}</h3>
+      <h3>{corrigirTime(bilhete.titulo || bilhete.jogo || "Bilhete")}</h3>
       <p>
         {money(bilhete.valor_apostado)} · odd {bilhete.odd_bilhete ?? "—"} · {rotuloStatus(bilhete.status_usuario)}
       </p>
@@ -41,8 +41,8 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onClose, con
           const status = statusDaPerna(perna);
           return (
             <div className="leg" key={ordem}>
-              <strong>{perna.selecao || `Palpite ${ordem}`}</strong>
-              <p className="muted">{perna.jogo || bilhete.jogo || ""}</p>
+              <strong>{corrigirTime(perna.selecao || `Palpite ${ordem}`)}</strong>
+              <p className="muted">{corrigirTime(perna.jogo || bilhete.jogo || "")}</p>
               <p>
                 {nomeMercado(perna.mercado)} {perna.odd_perna ? `· ${perna.odd_perna}` : ""}
               </p>
