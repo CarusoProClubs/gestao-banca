@@ -19,7 +19,7 @@ export default function Nav() {
   const path = usePathname();
   return (
     <nav>
-      <strong>Gestão de Banca</strong>
+      <strong className="brand">Gestão de Banca</strong>
       {LINKS.map(([href, label]) => (
         <Link key={href} href={href} className={path === href ? "active" : ""}>
           {label}
