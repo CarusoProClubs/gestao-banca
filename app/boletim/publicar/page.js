@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { getSupabase } from "../../../lib/supabase";
+import { publicarAviso } from "../../../lib/notificacoes";
+import { inicioSemana } from "../../../lib/alavancagem";
 
-export default function PublicarBoletimPage() {
+export default function PublicarPage() {
   const hoje = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     data: hoje,
@@ -38,22 +40,28 @@ export default function PublicarBoletimPage() {
       nivel: form.nivel,
       motivo: form.motivo,
     });
-    setMsg(error ? error.message : "Publicado no boletim.");
-    if (!error) {
-      setForm({ ...form, titulo: "", evento: "", mercado: "", odd_sugerida: "", motivo: "" });
-      load();
-    }
+    if (error) return setMsg(error.message);
+    await publicarAviso(supabase, {
+      tipo: "alteracao",
+      titulo: "Atualização no boletim do dia",
+      corpo: `${form.titulo || form.evento || "Nova entrada"} · veja o boletim.`,
+      link: "/boletim",
+      inicio_semana: inicioSemana(),
+    });
+    setMsg("Publicado no boletim e aviso enviado no app.");
+    setForm({ ...form, titulo: "", evento: "", mercado: "", odd_sugerida: "", motivo: "" });
+    load();
   }
 
   return (
     <section className="card">
       <h2>Publicar boletim</h2>
-      <p>Vai para todos os clientes no dia escolhido. Não mistura com a análise de ninguém.</p>
+      <p>Análise do dia. Se mudar a grade da semana, use também Alavancagem → tabela da semana.</p>
       <p>Data</p>
       <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
       <p>Título</p>
       <input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
-      <p>Evento</p>
+      <p>Evento (ex.: Flamengo x Palmeiras)</p>
       <input value={form.evento} onChange={(e) => setForm({ ...form, evento: e.target.value })} />
       <p>Mercado</p>
       <input value={form.mercado} onChange={(e) => setForm({ ...form, mercado: e.target.value })} />
@@ -68,9 +76,10 @@ export default function PublicarBoletimPage() {
       <p>Por que essa entrada</p>
       <textarea rows={4} value={form.motivo} onChange={(e) => setForm({ ...form, motivo: e.target.value })} />
       <p>
-        <button onClick={salvar}>Publicar</button>
+        <button onClick={salvar}>Publicar e avisar</button>
       </p>
       <p>{msg}</p>
+      <h2>Já no ar neste dia</h2>
       {lista.map((item) => (
         <p key={item.id}>{item.titulo} · {item.evento}</p>
       ))}

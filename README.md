@@ -1,15 +1,18 @@
 # Gestão de Banca
 
-App no navegador. Cada cliente futuro é uma `organization`.
-No começo você é a única org no plano free do Supabase.
-Quando a grade de clientes crescer, sobe o plano. O modelo não muda.
+App no navegador. Cada cliente é uma `organization`.
 
-## Peças
+## Fluxo da semana
 
-- Telegram (`leitor-bilhete`) — print vira JSON
-- Este app — importa o JSON, banca, Green/Red manual
-- Supabase — dados
-- Vercel — URL pública
+- Domingo o admin analisa os eventos, monta a tabela em `/alavancagem/semana` e publica.
+- A faixa (3–5x / 6–9x / 10–15x) sai da **quantidade de eventos ativos**, não da escolha do cliente.
+- O cliente em `/alavancagem` só informa o valor que quer investir naquela faixa.
+- Alteração no meio da semana gera aviso nativo no sino do app. Sem cadastro extra e sem Telegram para o cliente.
+
+## SQL extra
+
+No Supabase SQL Editor, rode também `supabase/semana.sql` (depois de `schema.sql` e `boletim.sql`).
+O perfil que publica precisa ter `profiles.role = 'admin'`.
 
 ## Subir local
 
@@ -18,6 +21,3 @@ npm install
 cp .env.example .env.local
 npm run dev
 ```
-
-No Supabase: rode `supabase/schema.sql` no SQL Editor.
-Cole `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` no `.env.local`.
