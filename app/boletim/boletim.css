@@ -1,9 +1,6 @@
 body.pagina-boletim .bg {
-  background-image: url("/fundodiario.jpg");
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: auto 100%;
-}
-body.pagina-boletim .bg::after {
-  opacity: 0;
+  background-image:
+    radial-gradient(900px 420px at 10% -10%, rgba(125, 179, 255, 0.2), transparent 56%),
+    radial-gradient(760px 420px at 100% 110%, rgba(62, 224, 160, 0.14), transparent 52%),
+    repeating-linear-gradient(125deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 14px);
 }
