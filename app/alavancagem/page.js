@@ -5,6 +5,7 @@ import { getSupabase } from "../../lib/supabase";
 import { inicioSemana } from "../../lib/alavancagem";
 import { parseAlavancagemTxt } from "../../lib/alavancagem-txt";
 import { resultadoNivel } from "../../lib/alavancagem-resultado";
+import { rotuloMercado } from "../../lib/mercado-texto";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -231,7 +232,7 @@ export default function AlavancagemPage() {
               <div className="leg" key={`${aberto}-${jogo.index}`}>
                 <strong>{jogo.jogo}</strong>
                 <p className="muted">{jogo.esporte} · {jogo.liga} · {jogo.data} {jogo.hora}</p>
-                <p>{jogo.mercado} · odd {jogo.odd} · usa {money(jogo.stake)}</p>
+                <p>{rotuloMercado(jogo.mercado, jogo.jogo)} · odd {jogo.odd} · usa {money(jogo.stake)}</p>
                 {jogo.status === "green" && <p className="ok">🟢 Green · vira {money(jogo.retorno)}</p>}
                 {jogo.status === "red" && <p className="bad">🔴 Red · perde {money(estado[aberto].valor)} deste nível</p>}
                 {jogo.status === "fechado" && <p className="muted">Sequência encerrada</p>}
