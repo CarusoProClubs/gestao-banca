@@ -18,9 +18,9 @@ const ROTULOS = {
 
 function estadoVazio() {
   return {
-    segura: { ativo: false, valor: "", resultados: {} },
-    media: { ativo: false, valor: "", resultados: {} },
-    alta: { ativo: false, valor: "", resultados: {} },
+    segura: { ativo: false, valor: "" },
+    media: { ativo: false, valor: "" },
+    alta: { ativo: false, valor: "" },
   };
 }
 
@@ -29,7 +29,13 @@ function lerEstado(meta) {
   if (!meta) return base;
   try {
     const parsed = JSON.parse(meta.nivel || "");
-    if (parsed && parsed.segura) return { ...base, ...parsed };
+    if (parsed && parsed.segura) {
+      return {
+        segura: { ativo: Boolean(parsed.segura.ativo), valor: parsed.segura.valor || "" },
+        media: { ativo: Boolean(parsed.media?.ativo), valor: parsed.media?.valor || "" },
+        alta: { ativo: Boolean(parsed.alta?.ativo), valor: parsed.alta?.valor || "" },
+      };
+    }
   } catch {
     /* formato antigo */
   }
@@ -39,17 +45,30 @@ function lerEstado(meta) {
 export default function AlavancagemPage() {
   const semana = inicioSemana();
   const arquivoRef = useRef(null);
+  const [admin, setAdmin] = useState(false);
   const [parsed, setParsed] = useState(parseAlavancagemTxt(""));
+  const [resultados, setResultados] = useState({ segura: {}, media: {}, alta: {} });
   const [estado, setEstado] = useState(estadoVazio());
   const [aberto, setAberto] = useState(null);
   const [metaId, setMetaId] = useState(null);
+  const [brutoTxt, setBrutoTxt] = useState("");
   const [msg, setMsg] = useState("");
 
   async function load() {
     const supabase = getSupabase();
     if (!supabase) return;
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", userData.user.id).single();
+      setAdmin(profile?.role === "admin");
+    }
     const { data: txtRows } = await supabase.from("alavancagem_txt").select("*").eq("inicio", semana).limit(1);
-    if (txtRows?.[0]) setParsed(parseAlavancagemTxt(txtRows[0].bruto || ""));
+    if (txtRows?.[0]) {
+      const lido = parseAlavancagemTxt(txtRows[0].bruto || "");
+      setParsed(lido);
+      setBrutoTxt(txtRows[0].bruto || "");
+      setResultados(txtRows[0].parsed?.resultados || { segura: {}, media: {}, alta: {} });
+    }
     const { data: metas } = await supabase.from("alavancagem_metas").select("*").eq("inicio", semana).limit(1);
     if (metas?.[0]) {
       setMetaId(metas[0].id);
@@ -64,18 +83,17 @@ export default function AlavancagemPage() {
   const contas = useMemo(() => {
     const saida = {};
     for (const id of Object.keys(ROTULOS)) {
-      const item = estado[id];
-      saida[id] = resultadoNivel(parsed.niveis?.[id] || [], item.valor, item.resultados);
+      saida[id] = resultadoNivel(parsed.niveis?.[id] || [], estado[id].valor, resultados[id] || {});
     }
     return saida;
-  }, [estado, parsed]);
+  }, [estado, parsed, resultados]);
 
   const ativos = Object.keys(ROTULOS).filter((id) => estado[id].ativo);
   const investido = ativos.reduce((acc, id) => acc + Number(estado[id].valor || 0), 0);
   const banca = ativos.reduce((acc, id) => acc + contas[id].banca, 0);
   const lucro = ativos.reduce((acc, id) => acc + contas[id].lucro, 0);
 
-  async function persistir(proximo) {
+  async function persistirCliente(proximo) {
     const supabase = getSupabase();
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return setMsg("Entre em /login");
@@ -94,14 +112,30 @@ export default function AlavancagemPage() {
     if (!error) load();
   }
 
+  async function salvarResultados(proximo) {
+    const supabase = getSupabase();
+    const { error } = await supabase.from("alavancagem_txt").upsert({
+      inicio: semana,
+      bruto: brutoTxt,
+      parsed: { ...parsed, resultados: proximo },
+    });
+    setMsg(error ? error.message : "Resultado atualizado para todos.");
+    if (!error) setResultados(proximo);
+  }
+
   async function enviarTxt(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     const bruto = await file.text();
     const lido = parseAlavancagemTxt(bruto);
     setParsed(lido);
+    setBrutoTxt(bruto);
     const supabase = getSupabase();
-    const { error } = await supabase.from("alavancagem_txt").upsert({ inicio: semana, bruto, parsed: lido });
+    const { error } = await supabase.from("alavancagem_txt").upsert({
+      inicio: semana,
+      bruto,
+      parsed: { ...lido, resultados },
+    });
     setMsg(error ? error.message : `${lido.eventos.length} jogo(s) publicados.`);
   }
 
@@ -112,13 +146,10 @@ export default function AlavancagemPage() {
   function iniciar(id) {
     const valor = Number(String(estado[id].valor).replace(",", "."));
     if (!valor) return setMsg("Informe o valor deste nível antes de iniciar.");
-    const proximo = {
-      ...estado,
-      [id]: { ...estado[id], ativo: true, valor: String(valor) },
-    };
+    const proximo = { ...estado, [id]: { ...estado[id], ativo: true, valor: String(valor) } };
     setEstado(proximo);
     setAberto(id);
-    persistir(proximo);
+    persistirCliente(proximo);
   }
 
   function verJogos(id) {
@@ -127,31 +158,32 @@ export default function AlavancagemPage() {
   }
 
   function marcar(id, index, status) {
-    const atual = estado[id].resultados?.[index];
+    if (!admin) return;
+    const atual = resultados[id]?.[index];
     const proximoStatus = atual === status ? "pendente" : status;
     const proximo = {
-      ...estado,
-      [id]: {
-        ...estado[id],
-        resultados: { ...estado[id].resultados, [index]: proximoStatus },
-      },
+      ...resultados,
+      [id]: { ...resultados[id], [index]: proximoStatus },
     };
-    setEstado(proximo);
-    persistir(proximo);
+    setResultados(proximo);
+    salvarResultados(proximo);
   }
 
   const jogosAbertos = aberto ? contas[aberto].linhas : [];
 
   return (
     <section>
-      <section className="card">
-        <h2>TXT da semana</h2>
-        <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
-        <p>
-          <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar TXT</button>
-        </p>
-        <p>{msg}</p>
-      </section>
+      {admin && (
+        <section className="card">
+          <h2>TXT da semana</h2>
+          <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
+          <p>
+            <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar TXT</button>
+          </p>
+          <p>{msg}</p>
+        </section>
+      )}
+      {!admin && msg && <p>{msg}</p>}
 
       <div className="grid">
         {Object.entries(ROTULOS).map(([id, nome]) => (
@@ -183,7 +215,7 @@ export default function AlavancagemPage() {
         <section className="card">
           <h2>Jogos · {ROTULOS[aberto]} · Meta {parsed.metas?.[aberto] || "—"}</h2>
           <p>Valor inicial: {money(estado[aberto].valor)} · Banca agora: {money(contas[aberto].banca)}</p>
-          <p className="muted">Green multiplica a banca pela odd. Um red perde só o valor inicial deste nível.</p>
+          {admin && <p className="muted">Você marca o resultado. Todo cliente vê a mesma atualização.</p>}
           {jogosAbertos.length === 0 ? (
             <p>Ainda não há jogos neste nível.</p>
           ) : (
@@ -192,22 +224,23 @@ export default function AlavancagemPage() {
                 <strong>{jogo.jogo}</strong>
                 <p className="muted">{jogo.esporte} · {jogo.liga} · {jogo.data} {jogo.hora}</p>
                 <p>{jogo.mercado} · odd {jogo.odd} · usa {money(jogo.stake)}</p>
-                {jogo.status === "green" && <p className="ok">Vira {money(jogo.retorno)}</p>}
-                {jogo.status === "red" && <p className="bad">Red: perde {money(estado[aberto].valor)} deste nível</p>}
+                {jogo.status === "green" && <p className="ok">🟢 Green · vira {money(jogo.retorno)}</p>}
+                {jogo.status === "red" && <p className="bad">🔴 Red · perde {money(estado[aberto].valor)} deste nível</p>}
                 {jogo.status === "fechado" && <p className="muted">Sequência encerrada</p>}
-                {jogo.motivo && <p>{jogo.motivo}</p>}
-                <p>
-                  {jogo.status === "pendente" ? (
-                    <>
-                      <button className="green" onClick={() => marcar(aberto, jogo.index, "green")}>🟢 Green</button>{" "}
-                      <button className="red" onClick={() => marcar(aberto, jogo.index, "red")}>🔴 Red</button>
-                    </>
-                  ) : jogo.status === "fechado" ? null : (
+                {jogo.status === "pendente" && !admin && <p className="muted">Aguardando resultado</p>}
+                {admin && jogo.status === "pendente" && (
+                  <p>
+                    <button className="green" onClick={() => marcar(aberto, jogo.index, "green")}>🟢 Green</button>{" "}
+                    <button className="red" onClick={() => marcar(aberto, jogo.index, "red")}>🔴 Red</button>
+                  </p>
+                )}
+                {admin && jogo.status !== "pendente" && jogo.status !== "fechado" && (
+                  <p>
                     <button className={jogo.status === "green" ? "green" : "red"} onClick={() => marcar(aberto, jogo.index, jogo.status)}>
                       {jogo.status === "green" ? "🟢 Green" : "🔴 Red"}
                     </button>
-                  )}
-                </p>
+                  </p>
+                )}
               </div>
             ))
           )}
@@ -218,17 +251,15 @@ export default function AlavancagemPage() {
         <article className="card">
           <h2>Investido na semana</h2>
           <strong>{money(investido)}</strong>
-          <p>350 + 100 + 50, se os três estiverem ativos</p>
+          <p>Soma dos seus níveis</p>
         </article>
         <article className="card">
           <h2>Retorno atual</h2>
           <strong>{money(banca)}</strong>
-          <p>Só o que ainda está na banca dos níveis sem red</p>
         </article>
         <article className="card">
           <h2>Lucro / prejuízo</h2>
           <strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong>
-          <p>Retorno menos o valor inicial de cada nível</p>
         </article>
       </div>
     </section>
