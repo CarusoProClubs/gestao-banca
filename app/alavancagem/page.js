@@ -161,6 +161,11 @@ export default function AlavancagemPage() {
             <p>Valor deste nível</p>
             <input value={estado[id].valor} onChange={(e) => mudarValor(id, e.target.value)} placeholder="Ex.: 100" />
             <p>{(parsed.niveis?.[id] || []).length} jogo(s)</p>
+            {estado[id].ativo && (
+              <p className={contas[id].lucro >= 0 ? "ok" : "bad"}>
+                Banca {money(contas[id].banca)} · {contas[id].lucro >= 0 ? "Lucro" : "Prejuízo"} {money(contas[id].lucro)}
+              </p>
+            )}
             <p>
               {estado[id].ativo ? (
                 <button className={aberto === id ? "active" : ""} onClick={() => verJogos(id)}>
@@ -213,15 +218,17 @@ export default function AlavancagemPage() {
         <article className="card">
           <h2>Investido na semana</h2>
           <strong>{money(investido)}</strong>
-          <p>Soma dos níveis iniciados</p>
+          <p>350 + 100 + 50, se os três estiverem ativos</p>
         </article>
         <article className="card">
           <h2>Retorno atual</h2>
           <strong>{money(banca)}</strong>
+          <p>Só o que ainda está na banca dos níveis sem red</p>
         </article>
         <article className="card">
           <h2>Lucro / prejuízo</h2>
           <strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong>
+          <p>Retorno menos o valor inicial de cada nível</p>
         </article>
       </div>
     </section>
