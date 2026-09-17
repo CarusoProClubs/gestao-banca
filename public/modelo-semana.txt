@@ -1,0 +1,15 @@
+SEMANA 14/09/2026
+BAIXO 4
+MEDIO 7
+ALTO 12
+
+# BAIXO
+17/09 16:00 | Futebol | Flamengo x Palmeiras | vitória Flamengo | 1.18 | favorito em casa
+18/09 19:00 | Basquete | Time A x Time B | vencedor A | 1.20 | desfalque no visitante
+
+# MEDIO
+19/09 16:00 | Futebol | Real Madrid x Girona | vitória Real | 1.35 | mando e elenco completo
+20/09 21:00 | Tênis | Jogador 1 x Jogador 2 | vencedor Jogador 1 | 1.40 | melhor ranking e superfície
+
+# ALTO
+21/09 16:00 | Futebol | Underdog x Favorito | vitória Favorito -1.5 | 1.80 | linha mais agressiva
