@@ -169,3 +169,12 @@ button.texto:hover {
 
 
 .entradas-valor{display:grid;gap:10px;margin-top:18px}.entrada-valor{display:grid;gap:4px;padding:13px 15px;border:1px solid rgba(100,255,190,.22);border-radius:14px;background:rgba(24,68,53,.24)}.entrada-valor.forte{border-color:rgba(100,255,190,.38);background:rgba(24,82,61,.32)}.entrada-selo{font-size:10px;letter-spacing:.14em;font-weight:800;color:#7dffc7}.entrada-valor strong{font-family:Fraunces,Georgia,serif;font-size:18px;color:#fff}.entrada-dados{font-size:12px;color:#aac7bb}.materia.destaque .entrada-valor{max-width:680px}
+
+.boletim-status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 2px;padding:10px 13px;border:1px solid rgba(143,183,232,.14);border-radius:12px;background:rgba(7,20,32,.42);color:#a9bdd2;font-size:13px}
+.boletim-status.ok{border-color:rgba(125,255,199,.18);color:#b9e8d4}
+.boletim-status.erro{border-color:rgba(255,120,120,.28);color:#ffc4c4}
+.boletim-status.login{border-color:rgba(255,210,100,.22);color:#ffe3a1}
+.boletim-status.vazio{color:#b4c4d5}
+.boletim-status.carregando,.boletim-status.salvando{color:#a9c9ee}
+.status-retry{margin-left:auto;padding:6px 10px;border-radius:8px;font-size:12px}
+.capa-admin button:disabled{opacity:.65;cursor:wait}
