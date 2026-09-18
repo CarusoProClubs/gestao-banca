@@ -41,38 +41,45 @@ main {
 }
 nav {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
   margin: 0 0 28px;
   padding: 10px 12px;
-  flex-wrap: wrap;
   position: sticky;
   top: 10px;
   z-index: 12;
-  background: linear-gradient(180deg, rgba(10,18,32,.82), rgba(6,12,22,.72));
+  background: linear-gradient(180deg, rgba(10,18,32,.88), rgba(6,12,22,.78));
   border: 1px solid rgba(110, 200, 255, 0.2);
   border-radius: 20px;
   box-shadow: 0 0 0 1px rgba(62, 255, 176, 0.06), 0 20px 50px rgba(0,0,0,.35);
   backdrop-filter: blur(18px);
 }
 nav .brand {
-  margin-right: 10px;
+  flex: 0 0 auto;
+  color: #fff;
+  text-decoration: none;
   font-size: 16px;
+  font-weight: 800;
   letter-spacing: -0.04em;
-  background: linear-gradient(90deg, #fff, #7dffc7 45%, #7ec8ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  padding: 8px 10px;
 }
-nav a {
+.nav-links {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-links a {
   color: var(--muted);
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 10px;
   border-radius: 999px;
+  white-space: nowrap;
 }
-nav a.active, nav a:hover {
+.nav-links a span:first-child { margin-right: 4px; }
+.nav-links a.active, .nav-links a:hover {
   color: #04110c;
   background: linear-gradient(90deg, #3cffb0, #6ec8ff);
 }
@@ -191,7 +198,33 @@ textarea, input, select {
 .bell-item span { display: block; color: var(--muted); font-size: 13px; }
 .bell-item.nova b { color: var(--accent); }
 @media (max-width: 720px) {
-  main { width: calc(100% - 24px); }
-  nav { top: 0; border-radius: 0 0 16px 16px; }
+  main { width: 100%; padding: 0 0 92px; }
+  nav {
+    position: sticky;
+    top: 0;
+    margin: 0;
+    border-radius: 0 0 16px 16px;
+    padding: 8px 10px;
+    flex-wrap: nowrap;
+  }
+  nav .brand { display: none; }
+  .nav-links {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a {
+    min-width: 58px;
+    text-align: center;
+    padding: 7px 6px;
+    font-size: 10px;
+  }
+  .nav-links a span:first-child { display: block; font-size: 18px; margin: 0 0 2px; }
+  .bell-wrap { flex: 0 0 auto; }
+  .card { border-radius: 16px; margin-top: 10px; padding: 15px; }
   .card .game { font-size: 18px; }
+  table { display: block; overflow-x: auto; }
 }
