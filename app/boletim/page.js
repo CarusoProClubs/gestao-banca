@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 import { parseBoletimTxt } from "../../lib/boletim-txt";
-import { chamadaBancada, nomeProprio, vozDetalhe, vozMateria, vozTexto } from "../../lib/voz-esportiva";
+import { chamadaBancada, entradasComValor, nomeProprio, vozDetalhe, vozMateria, vozTexto } from "../../lib/voz-esportiva";
 import "./boletim.css";
 
 function dataBonita(iso) {
@@ -107,7 +107,19 @@ export default function BoletimPage() {
                 <p className="materia-linha">{vozMateria(jogo)}</p>
               )}
 
-              {(jogo.detalhe || jogo.noticia || jogo.resumo || jogo.leitura) && (
+              {entradasComValor(jogo).length > 0 && (
+                <div className="entradas-valor" aria-label="Entradas com valor potencial">
+                  {entradasComValor(jogo).map((entrada, i) => (
+                    <div className={`entrada-valor ${entrada.valor.forte ? "forte" : "moderada"}`} key={`${entrada.mercado}-${i}`}>
+                      <span className="entrada-selo">VALOR POTENCIAL</span>
+                      <strong>{entrada.mercado || "Entrada no radar"}</strong>
+                      <span className="entrada-dados">Odd {entrada.odd.toFixed(2)} · estimativa {entrada.probabilidade}% · margem +{entrada.valor.valor.toFixed(1)} p.p.</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(jogo.detalhe || jogo.noticia || jogo.resumo || jogo.leitura || entradasComValor(jogo).length > 0) && (
                 <button className="texto" onClick={() => setAberto(abertoAgora ? null : `${filtro}-${index}`)}>
                   {abertoAgora ? "Fechar leitura" : "Continuar leitura"}
                 </button>
