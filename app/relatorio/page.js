@@ -46,7 +46,7 @@ export default function RelatorioPage() {
         <button onClick={() => window.print()}>Imprimir / salvar PDF</button>
       </p>
       <p>Recebimento: {settings.periodicidade}</p>
-      <p>Bilhetes no mês: {mes.total} · {mes.green} 🟢 · {mes.red} 🔴</p>
+      <p>Bilhetes no mês: {mes.total} · {mes.green} 🟢 · {mes.red} 🔴 · {mes.cashout || 0} 🟡 · {mes.anulada || 0} ⚪ · {mes.pendente || 0} pendentes</p>
       <p>Apostado no mês: {money(mes.apostado)}</p>
       <p className={mes.lucro >= 0 ? "ok" : "bad"}>Resultado do mês: {money(mes.lucro)} · ROI {pct(mes.roi)}</p>
       <p>Teto do período: {money(orcamento)} · {termo.seguro ? "🟢 Seguro" : "🔴 Alerta"}</p>
