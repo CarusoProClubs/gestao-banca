@@ -7,6 +7,23 @@ import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
 const CASAS = ["Betano", "bet365", "Betfair", "Sportingbet", "KTO", "Novibet", "EstrelaBet", "Superbet", "Blaze", "Pixbet", "Stake", "1xBet", "Rivalo"];
 
 function money(value) { return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+
+function paraDatetimeLocal(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function deDatetimeLocal(value) {
+  if (!value) return null;
+  // O input representa horário local do usuário. Não usamos toISOString(),
+  // pois isso deslocaria o horário para UTC e poderia alterar a data exibida.
+  const [date, time] = value.split("T");
+  if (!date || !time) return null;
+  return `${date}T${time}:00`;
+}
 function alterarBilhete(bilhete, campo, valor) {
   const atualizado = { ...bilhete, [campo]: valor };
   return fecharBilhete({ ...atualizado, payload: { ...(atualizado.payload || {}), [campo]: valor } });
@@ -30,7 +47,7 @@ export default function BilheteCard({ bilhete, onChange, onConfirm, onDelete, on
       {bilhete.avisos?.length > 0 && <div className="card" style={{ marginBottom: 12 }}><strong>⚠️ Pontos para conferir</strong><ul>{bilhete.avisos.map((aviso, index) => <li key={index}>{aviso}</li>)}</ul></div>}
       <div className="grid">
         <label>Casa de aposta<select value={bilhete.casa || ""} onChange={(e) => editar("casa", e.target.value || null)}><option value="">Selecione a casa</option>{CASAS.map((casa) => <option key={casa} value={casa}>{casa}</option>)}</select></label>
-        <label>Data e hora<input type="datetime-local" value={bilhete.data_hora ? String(bilhete.data_hora).slice(0, 16) : ""} onChange={(e) => editar("data_hora", e.target.value ? new Date(e.target.value).toISOString() : null)} /></label>
+        <label>Data e hora<input type="datetime-local" value={paraDatetimeLocal(bilhete.data_hora)} onChange={(e) => editar("data_hora", deDatetimeLocal(e.target.value))} /></label>
         <label>ID da casa<input value={bilhete.id_casa || ""} onChange={(e) => editar("id_casa", e.target.value || null)} /></label>
         <label>Valor apostado<input type="number" min="0.01" step="0.01" value={bilhete.valor_apostado ?? ""} onChange={(e) => editar("valor_apostado", e.target.value === "" ? null : Number(e.target.value))} /></label>
         <label>Odd do bilhete<input type="number" min="0.000001" step="0.000001" value={bilhete.odd_bilhete ?? ""} onChange={(e) => editar("odd_bilhete", e.target.value === "" ? null : Number(e.target.value))} /></label>
