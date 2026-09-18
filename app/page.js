@@ -49,24 +49,36 @@ export default function Page() {
   async function gravar(ticket) {
     const supabase = getSupabase();
     const fechado = comPernas(ticket);
-    const { error } = await supabase.from("tickets").update({
-      casa: fechado.casa,
-      id_casa: fechado.id_casa,
-      codigo_booking: fechado.codigo_booking,
-      data_hora: fechado.data_hora,
-      tipo: fechado.tipo,
-      formato: fechado.formato,
-      titulo: fechado.titulo,
-      valor_apostado: fechado.valor_apostado,
-      odd_bilhete: fechado.odd_bilhete,
-      retorno_casa: fechado.retorno_casa,
-      valor_resgatado: fechado.valor_resgatado,
-      status_print: fechado.status_print || fechado.status_detectado || "pendente",
-      status_usuario: fechado.status_usuario,
-      lucro: fechado.lucro,
-      payload: fechado.payload,
-    }).eq("id", ticket.id);
-    if (error) return;
+    const { error } = await supabase.rpc("atualizar_bilhete_atomico", {
+      p_ticket_id: ticket.id,
+      p_ticket: {
+        organization_id: ticket.organization_id,
+        created_by: ticket.created_by,
+        casa: fechado.casa,
+        id_casa: fechado.id_casa,
+        codigo_booking: fechado.codigo_booking,
+        data_hora: fechado.data_hora,
+        tipo: fechado.tipo,
+        formato: fechado.formato,
+        titulo: fechado.titulo,
+        valor_apostado: fechado.valor_apostado,
+        moeda: fechado.moeda || "BRL",
+        odd_bilhete: fechado.odd_bilhete,
+        retorno_casa: fechado.retorno_casa,
+        valor_resgatado: fechado.valor_resgatado,
+        status_print: fechado.status_print || fechado.status_detectado || "desconhecido",
+        status_usuario: fechado.status_usuario,
+        esporte: fechado.esporte,
+        jogo: fechado.jogo,
+        payload: fechado.payload,
+        lucro: fechado.lucro,
+      },
+      p_pernas: fechado.pernas,
+    });
+    if (error) {
+      window.alert(`Não foi possível salvar as correções: ${error.message}`);
+      return;
+    }
     setAberto({ ...fechado, id: ticket.id });
     await load();
   }
