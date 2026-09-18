@@ -1,17 +1,19 @@
 import "./globals.css";
 import Nav from "../components/Nav";
+import PwaRegister from "../components/PwaRegister";
 
-export const metadata = { title: "Gestão de Banca" };
+export const metadata = {
+  title: "Gestão de Banca",
+  description: "Gestão e acompanhamento de apostas esportivas.",
+  applicationName: "Gestão de Banca",
+  appleWebApp: { capable: true, title: "Gestão de Banca", statusBarStyle: "black-translucent" }
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      </head>
       <body>
+        <PwaRegister />
         <div className="bg" />
         <main>
           <Nav />
