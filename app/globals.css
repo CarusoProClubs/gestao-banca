@@ -153,3 +153,74 @@ textarea,input,select { width:100%; background:rgba(4,8,14,.72); color:var(--tex
 }
 .metric-card{position:relative;overflow:hidden}.metric-icon{position:absolute;top:16px;right:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;color:var(--green);background:rgba(60,255,176,.08);border:1px solid rgba(60,255,176,.15)}.profile-age-preview,.age-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;padding:8px 10px;border-radius:10px;background:rgba(110,200,255,.06)}.profile-settings-block{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}.profile-setting-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:8px}.auth-title{display:flex;align-items:center;gap:12px;margin-bottom:16px}.auth-title h2{margin:0}.auth-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:rgba(60,255,176,.08);border:1px solid rgba(60,255,176,.15)}@media(max-width:720px){main{padding-bottom:104px}.bottom-nav{padding-left:7px;padding-right:7px}.bottom-nav a{min-height:58px}.bottom-nav a svg{flex:0 0 auto}}
 .profile-page{max-width:760px;margin:0 auto}.profile-page-head{display:flex;align-items:center;gap:14px;margin:10px 0 18px}.profile-page-head h1{margin:0;font-size:28px;letter-spacing:-.04em}.profile-page-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.profile-page-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;color:var(--green);background:rgba(60,255,176,.08);border:1px solid rgba(60,255,176,.18)}.profile-page-card{margin-top:0}.profile-page-card label{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:12px 0 5px}.profile-page-save{width:100%;margin-top:16px;padding:12px}.profile-page-save:disabled{opacity:.65;cursor:wait}
+
+/* Prompt de instalação do app */
+.install-app-prompt{
+  position:fixed;
+  right:22px;
+  bottom:92px;
+  z-index:10000;
+  width:min(470px,calc(100vw - 36px));
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:14px;
+  border:1px solid rgba(110,200,255,.24);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(13,25,40,.98),rgba(7,15,26,.98));
+  box-shadow:0 22px 65px rgba(0,0,0,.55),0 0 0 1px rgba(60,255,176,.05);
+  backdrop-filter:blur(24px);
+  animation:installPromptIn .28s ease-out;
+}
+.install-app-icon{
+  flex:0 0 auto;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:13px;
+  color:var(--green);
+  background:linear-gradient(135deg,rgba(60,255,176,.14),rgba(110,200,255,.12));
+  border:1px solid rgba(60,255,176,.22);
+}
+.install-app-copy{min-width:0;display:flex;flex-direction:column;gap:3px;flex:1}
+.install-app-copy strong{font-size:13px;letter-spacing:-.01em}
+.install-app-copy span{color:var(--muted);font-size:11px;line-height:1.4}
+.install-app-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.install-app-button{
+  border:0;
+  border-radius:11px;
+  padding:9px 12px;
+  background:linear-gradient(90deg,#3cffb0,#6ec8ff);
+  color:#04110c;
+  font-weight:900;
+  font-size:11px;
+  cursor:pointer;
+}
+.install-app-dismiss{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:11px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.045);
+  color:var(--muted);
+  font-weight:800;
+  font-size:10px;
+  cursor:pointer;
+}
+.install-app-button:hover,.install-app-dismiss:hover{filter:brightness(1.08)}
+@keyframes installPromptIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:720px){
+  .install-app-prompt{
+    left:10px;
+    right:10px;
+    bottom:calc(82px + env(safe-area-inset-bottom));
+    width:auto;
+    align-items:flex-start;
+    padding:13px;
+  }
+  .install-app-icon{width:38px;height:38px;border-radius:12px}
+  .install-app-copy strong{font-size:12px}
+  .install-app-copy span{font-size:10px}
+  .install-app-actions{flex-direction:column;align-items:stretch}
+  .install-app-button,.install-app-dismiss{white-space:nowrap}
+}
