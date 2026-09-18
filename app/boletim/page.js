@@ -6,24 +6,88 @@ import { parseBoletimTxt } from "../../lib/boletim-txt";
 import { chamadaBancada, entradasComValor, nomeProprio, vozDetalhe, vozMateria, vozTexto } from "../../lib/voz-esportiva";
 import "./boletim.css";
 
+function dataLocal() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
 function dataBonita(iso) {
   const [ano, mes, dia] = String(iso).split("-");
   return `${dia}/${mes}/${ano}`;
 }
 
+function mensagemErro(error, fallback) {
+  if (!error) return fallback;
+  return [error.message, error.hint, error.details].filter(Boolean).join(" · ") || fallback;
+}
+
 export default function BoletimPage() {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = dataLocal();
   const arquivoRef = useRef(null);
   const [parsed, setParsed] = useState(parseBoletimTxt(""));
   const [filtro, setFiltro] = useState("principais");
   const [aberto, setAberto] = useState(null);
   const [msg, setMsg] = useState("");
+  const [status, setStatus] = useState("carregando");
 
   async function load() {
-    const supabase = getSupabase();
-    if (!supabase) return;
-    const { data } = await supabase.from("boletim_txt").select("*").eq("data", hoje).limit(1);
-    if (data?.[0]) setParsed(parseBoletimTxt(data[0].bruto || ""));
+    try {
+      const supabase = getSupabase();
+
+      if (!supabase) {
+        setStatus("erro");
+        setMsg("O Supabase não está configurado neste ambiente.");
+        return;
+      }
+
+      const { data: usuario, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        setStatus("erro");
+        setMsg(mensagemErro(authError, "Não foi possível validar seu acesso."));
+        return;
+      }
+
+      if (!usuario?.user) {
+        setStatus("login");
+        setMsg("Entre no seu perfil para carregar o boletim.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("boletim_txt")
+        .select("data, bruto, parsed")
+        .eq("data", hoje)
+        .limit(1);
+
+      if (error) {
+        setStatus("erro");
+        setMsg(mensagemErro(error, "Não foi possível carregar o boletim de hoje."));
+        return;
+      }
+
+      if (!data?.[0]) {
+        setStatus("vazio");
+        setMsg("Ainda não existe um boletim publicado para hoje.");
+        return;
+      }
+
+      const registro = data[0];
+      const lido = registro.bruto
+        ? parseBoletimTxt(registro.bruto)
+        : registro.parsed || parseBoletimTxt("");
+
+      setParsed(lido);
+      setStatus(lido.jogos?.length ? "ok" : "vazio");
+      setMsg(lido.jogos?.length ? `${lido.jogos.length} jogos no ar.` : "O boletim existe, mas ainda não trouxe jogos.");
+    } catch (error) {
+      console.error("Erro ao carregar boletim:", error);
+      setStatus("erro");
+      setMsg(mensagemErro(error, "Falha inesperada ao carregar o boletim."));
+    }
   }
 
   useEffect(() => {
@@ -35,13 +99,58 @@ export default function BoletimPage() {
   async function enviarTxt(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const bruto = await file.text();
-    const lido = parseBoletimTxt(bruto);
-    setParsed(lido);
-    const supabase = getSupabase();
-    const { error } = await supabase.from("boletim_txt").upsert({ data: hoje, bruto, parsed: lido });
-    setMsg(error ? error.message : `${lido.jogos.length} jogos no ar.`);
+
     event.target.value = "";
+    setStatus("salvando");
+    setMsg("Lendo e salvando o boletim...");
+
+    try {
+      const bruto = await file.text();
+      const lido = parseBoletimTxt(bruto);
+
+      if (!lido.jogos?.length) {
+        setStatus("erro");
+        setMsg("O TXT foi lido, mas nenhum jogo foi reconhecido. Confira o formato.");
+        return;
+      }
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        setStatus("erro");
+        setMsg("O Supabase não está configurado neste ambiente.");
+        return;
+      }
+
+      const { data: usuario, error: authError } = await supabase.auth.getUser();
+      if (authError || !usuario?.user) {
+        setStatus("login");
+        setMsg("Faça login para publicar um boletim.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("boletim_txt")
+        .upsert(
+          { data: hoje, bruto, parsed: lido },
+          { onConflict: "data" }
+        );
+
+      if (error) {
+        setStatus("erro");
+        setMsg(mensagemErro(error, "Não foi possível salvar o boletim. Se você não for administrador, peça acesso."));
+        return;
+      }
+
+      setParsed(lido);
+      setFiltro("principais");
+      setAberto(null);
+      setStatus("ok");
+      setMsg(`${lido.jogos.length} jogos no ar. TXT e leitura estruturada foram salvos.`);
+    } catch (error) {
+      console.error("Erro ao publicar boletim:", error);
+      setStatus("erro");
+      setMsg(mensagemErro(error, "Falha inesperada ao publicar o boletim."));
+    }
   }
 
   const destaques = parsed.jogos?.filter((j) => j.principal) || [];
@@ -57,11 +166,19 @@ export default function BoletimPage() {
     return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
   }, [parsed, filtro]);
 
+  const vazioTexto = status === "login"
+    ? "Faça login para acessar a edição de hoje."
+    : status === "erro"
+      ? "O boletim não conseguiu ser carregado. Veja o aviso acima."
+      : status === "carregando"
+        ? "Carregando a edição de hoje..."
+        : "A redação ainda não fechou esta parte da edição.";
+
   return (
     <section className="jornal">
       <header className="capa">
         <p className="capa-selo">Edição · {dataBonita(hoje)}</p>
-        <h1>{parsed.manchete ? nomeProprio(parsed.manchete) : "A edição de hoje ainda vai ao ar"}</h1>
+        <h1>{parsed.manchete ? nomeProprio(parsed.manchete) : "Boletim do Dia"}</h1>
         {parsed.geral && <p className="capa-olho">{vozTexto(parsed.geral)}</p>}
 
         <nav className="capa-abas" aria-label="Esportes da edição">
@@ -75,10 +192,18 @@ export default function BoletimPage() {
           ))}
         </nav>
 
+        <div className={`boletim-status ${status}`} aria-live="polite">
+          <span>{msg || "Preparando a edição..."}</span>
+          {status === "erro" || status === "login" ? (
+            <button className="status-retry" onClick={load}>Tentar novamente</button>
+          ) : null}
+        </div>
+
         <p className="capa-admin">
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
-          <button className="green" onClick={() => arquivoRef.current?.click()}>Enviar boletim TXT</button>
-          {msg && <span aria-live="polite">{msg}</span>}
+          <button className="green" onClick={() => arquivoRef.current?.click()} disabled={status === "salvando"}>
+            {status === "salvando" ? "Publicando..." : "Enviar boletim TXT"}
+          </button>
         </p>
       </header>
 
@@ -89,7 +214,7 @@ export default function BoletimPage() {
       )}
 
       <section className="caderno">
-        {materias.length === 0 && <p className="vazio">A redação ainda não fechou esta parte da edição.</p>}
+        {materias.length === 0 && <p className="vazio">{vazioTexto}</p>}
 
         {materias.map((jogo, index) => {
           const abertoAgora = aberto === `${filtro}-${index}`;
