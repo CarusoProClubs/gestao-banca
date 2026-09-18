@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { interpretarBilhete } from "../../../lib/leitor-aposta";
+import { validarLeitura } from "../../../lib/validar-leitura";
 import { validarResultadosBilhete } from "../../../lib/validar-aposta";
 
 export const runtime = "nodejs";
@@ -29,20 +30,22 @@ export async function POST(request) {
     const files = form.getAll("files").filter((file) => file && typeof file.arrayBuffer === "function");
     if (!files.length) return NextResponse.json({ error: "Selecione pelo menos uma imagem." }, { status: 400 });
 
-    // A leitura visual é a etapa crítica e precisa devolver o bilhete assim que o Gemini terminar.
-    // A validação esportiva faz consultas externas + uma segunda chamada ao Gemini e não deve
-    // bloquear a apresentação do resultado do print.
-    const leitura = await interpretarBilhete(files);
+    const leitura = validarLeitura(await interpretarBilhete(files));
 
+    // Nunca bloqueia a leitura do comprovante por consultas esportivas externas.
+    // A validação de resultado é uma etapa posterior e explícita.
     const validar = new URL(request.url).searchParams.get("validar") === "1";
     if (!validar) {
       return NextResponse.json({ ok: true, bilhete: leitura, validacao_pendente: true });
     }
 
     const result = await validarResultadosBilhete(leitura);
-    return NextResponse.json({ ok: true, bilhete: result, validacao_pendente: false });
+    return NextResponse.json({ ok: true, bilhete: validarLeitura(result), validacao_pendente: false });
   } catch (error) {
     console.error("[ler-bilhete]", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Falha ao interpretar o bilhete." }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Falha ao interpretar o bilhete." },
+      { status: 500 }
+    );
   }
 }
