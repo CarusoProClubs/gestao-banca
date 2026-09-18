@@ -1,42 +1,7 @@
 "use client";
-
-import { useState } from "react";
-import { getSupabase } from "../../lib/supabase";
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState("");
-
-  async function submit(mode) {
-    const supabase = getSupabase();
-    if (!supabase) {
-      setMsg("Faltou configurar o Supabase no .env.local");
-      return;
-    }
-    setMsg("Aguarde...");
-    const action =
-      mode === "signup"
-        ? supabase.auth.signUp({ email, password })
-        : supabase.auth.signInWithPassword({ email, password });
-    const { error } = await action;
-    setMsg(error ? error.message : mode === "signup" ? "Conta criada. Se pedir confirmação, veja o e-mail. Depois entre." : "Entrou. Abra o Painel.");
-    if (!error && mode === "login") window.location.href = "/";
-  }
-
-  return (
-    <section className="card">
-      <h2>Entrar</h2>
-      <p>O primeiro cadastro cria a sua organização. Clientes futuros repetem o mesmo fluxo.</p>
-      <p>E-mail</p>
-      <input value={email} onChange={(e) => setEmail(e.target.value)} />
-      <p>Senha (mínimo 6)</p>
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <p>
-        <button onClick={() => submit("login")}>Entrar</button>{" "}
-        <button onClick={() => submit("signup")}>Criar conta</button>
-      </p>
-      <p>{msg}</p>
-    </section>
-  );
-}
+import {useState} from "react";
+import {getSupabase} from "../../lib/supabase";
+function idade(d){if(!d)return null;const h=new Date(),n=new Date(d+"T00:00:00");let a=h.getFullYear()-n.getFullYear();if(h<new Date(h.getFullYear(),n.getMonth(),n.getDate()))a--;return a}
+export default function LoginPage(){const [mode,setMode]=useState("login"),[name,setName]=useState(""),[birth,setBirth]=useState(""),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[msg,setMsg]=useState("");
+async function submit(){const s=getSupabase();if(!s)return setMsg("Faltou configurar o Supabase no .env.local");if(mode==="signup"){const a=idade(birth);if(!name.trim())return setMsg("Informe seu nome.");if(a===null)return setMsg("Informe sua data de nascimento.");if(a<18)return setMsg("Cadastro bloqueado: é necessário ter 18 anos ou mais.")}setMsg("Aguarde...");if(mode==="signup"){const {data,error}=await s.auth.signUp({email,password,options:{data:{full_name:name.trim(),data_nascimento:birth}}});if(error)return setMsg(error.message);if(data.user)await s.from("profiles").update({full_name:name.trim(),data_nascimento:birth,idade:idade(birth)}).eq("id",data.user.id);return setMsg("Conta criada. Se pedir confirmação, veja o e-mail. Depois entre.")}const {error}=await s.auth.signInWithPassword({email,password});setMsg(error?error.message:"Entrou. Abra o Painel.");if(!error)window.location.href="/"}
+return <section className="card auth-card"><div className="auth-title"><span className="auth-icon">👤</span><div><h2>{mode==="signup"?"Criar conta":"Entrar"}</h2><p>{mode==="signup"?"Seu cadastro começa pelo perfil.":"Acesse sua banca."}</p></div></div>{mode==="signup"&&<><label>Nome<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Data de nascimento<input type="date" value={birth} max={new Date().toISOString().slice(0,10)} onChange={e=>setBirth(e.target.value)}/></label><p className="age-check">Idade identificada: <strong>{idade(birth)??"—"} anos</strong></p></>}<label>E-mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Senha (mínimo 6)<input type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label><p><button className="green" onClick={submit}>{mode==="signup"?"Criar conta":"Entrar"}</button></p><button onClick={()=>{setMode(mode==="login"?"signup":"login");setMsg("")}}>{mode==="login"?"Ainda não tenho conta":"Já tenho conta"}</button><p>{msg}</p></section>}
