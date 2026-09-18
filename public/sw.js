@@ -1,4 +1,4 @@
-const CACHE_NAME = "gestao-banca-shell-v1";
+const CACHE_NAME = "gestao-banca-shell-v2";
 const APP_SHELL = ["/", "/login"];
 
 self.addEventListener("install", (event) => {
