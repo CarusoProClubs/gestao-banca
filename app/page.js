@@ -10,6 +10,7 @@ import { rotuloSaldo, rotuloStatus } from "../lib/rotulos";
 import { regrasSugeridas } from "../lib/disciplina";
 import BilheteCard from "../components/BilheteCard";
 import Disciplina from "../components/Disciplina";
+import Icon from "../components/Icon";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -111,10 +112,10 @@ export default function Page() {
       </div>
       {filtros.periodo === "custom" && <div className="filters"><div><p>De</p><input type="date" value={filtros.de} onChange={(e) => setFiltros({ ...filtros, de: e.target.value })} /></div><div><p>Até</p><input type="date" value={filtros.ate} onChange={(e) => setFiltros({ ...filtros, ate: e.target.value })} /></div></div>}
       <div className="grid">
-        <article className="card"><h2>Teto do período</h2><strong>{money(orcamento)}</strong><p>Recebimento {periodicidade}</p></article>
-        <article className="card"><h2>Lucro / prejuízo do período</h2><strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong></article>
-        <article className="card"><h2>Exposição pendente</h2><strong>{money(pendente)}</strong></article>
-        <article className="card"><h2>Termômetro familiar</h2><strong className={termo.seguro ? "ok" : "bad"}>{termo.seguro ? "Seguro" : "Alerta"}</strong><p>Uso do caixa: {money(termo.consumo)} de {money(orcamento)}</p></article>
+        <article className="card metric-card"><div className="metric-icon"><Icon name="calendar" size={20}/></div><h2>Teto do período</h2><strong>{money(orcamento)}</strong><p>Recebimento {periodicidade}</p></article>
+        <article className="card metric-card"><div className="metric-icon"><Icon name="chart" size={20}/></div><h2>Lucro / prejuízo do período</h2><strong className={lucro >= 0 ? "ok" : "bad"}>{money(lucro)}</strong></article>
+        <article className="card metric-card"><div className="metric-icon"><Icon name="wallet" size={20}/></div><h2>Exposição pendente</h2><strong>{money(pendente)}</strong></article>
+        <article className="card metric-card"><div className="metric-icon"><Icon name="shield" size={20}/></div><h2>Termômetro familiar</h2><strong className={termo.seguro ? "ok" : "bad"}>{termo.seguro ? "Seguro" : "Alerta"}</strong><p>Uso do caixa: {money(termo.consumo)} de {money(orcamento)}</p></article>
       </div>
       <Disciplina termo={termo} seq={seq} regras={regras} />
       <section className="card">
