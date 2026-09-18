@@ -87,12 +87,7 @@ main { position: relative; z-index: 1; width: min(1280px, calc(100% - 48px)); ma
 .profile-save { background:linear-gradient(90deg, #3cffb0, #6ec8ff); color:#04110c; }
 
 /* Navegação inferior */
-.bottom-nav {
-  position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:15;
-  width:min(920px, calc(100% - 28px)); padding:7px;
-  border:1px solid rgba(110,200,255,.2); border-radius:20px; background:rgba(7,14,25,.88);
-  box-shadow:0 18px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(60,255,176,.05); backdrop-filter:blur(22px);
-}
+.bottom-nav{position:fixed!important;left:0;right:0;bottom:0;transform:none;z-index:9999;width:100%;padding:8px 10px calc(8px + env(safe-area-inset-bottom));border:0;border-top:1px solid rgba(110,200,255,.2);border-radius:18px 18px 0 0;background:rgba(7,14,25,.96);box-shadow:0 -18px 50px rgba(0,0,0,.45);backdrop-filter:blur(22px)}
 .bottom-nav-inner { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
 .bottom-nav a {
   display:flex; align-items:center; justify-content:center; gap:5px; min-width:0;
@@ -159,3 +154,4 @@ textarea,input,select { width:100%; background:rgba(4,8,14,.72); color:var(--tex
   .card .game { font-size:18px; }
   table { display:block; overflow-x:auto; }
 }
+.metric-card{position:relative;overflow:hidden}.metric-icon{position:absolute;top:16px;right:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;color:var(--green);background:rgba(60,255,176,.08);border:1px solid rgba(60,255,176,.15)}.profile-age-preview,.age-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;padding:8px 10px;border-radius:10px;background:rgba(110,200,255,.06)}.profile-settings-block{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}.profile-setting-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:8px}.auth-title{display:flex;align-items:center;gap:12px;margin-bottom:16px}.auth-title h2{margin:0}.auth-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:rgba(60,255,176,.08);border:1px solid rgba(60,255,176,.15)}@media(max-width:720px){main{padding-bottom:96px}.bottom-nav{padding-left:5px;padding-right:5px}.bottom-nav a{min-height:54px}.bottom-nav a svg{flex:0 0 auto}}
