@@ -178,3 +178,129 @@ button.texto:hover {
 .boletim-status.carregando,.boletim-status.salvando{color:#a9c9ee}
 .status-retry{margin-left:auto;padding:6px 10px;border-radius:8px;font-size:12px}
 .capa-admin button:disabled{opacity:.65;cursor:wait}
+
+
+/* Boletim v2 — leitura editorial e filtros por esporte */
+.jornal {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.capa {
+  width: 100%;
+  min-width: 0;
+}
+
+.capa-abas {
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  margin: 22px 0 10px;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.capa-abas button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 1px solid rgba(110, 200, 255, .15);
+  background: rgba(18, 31, 47, .78);
+  color: #b9c9da;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-size: 12px;
+}
+
+.capa-abas button.active {
+  background: linear-gradient(90deg, #3cffb0, #6ec8ff);
+  color: #04110c;
+  border-color: transparent;
+}
+
+.capa-admin {
+  margin-top: 12px;
+}
+
+.resumo {
+  width: 100%;
+  max-width: 920px;
+}
+
+.caderno {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.materia {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.materia h3,
+.materia-linha,
+.materia-corpo {
+  max-width: 100%;
+}
+
+.materia-chapéu {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 899px) {
+  body.pagina-boletim main {
+    width: 100%;
+    max-width: none;
+  }
+
+  .jornal {
+    width: 100%;
+    max-width: none;
+  }
+
+  .capa h1 {
+    font-size: clamp(30px, 10vw, 48px);
+  }
+
+  .capa-olho {
+    max-width: none;
+    font-size: 16px;
+  }
+
+  .caderno {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 28px;
+  }
+
+  .materia,
+  .materia.destaque {
+    width: 100%;
+    padding: 18px 16px 20px;
+  }
+
+  .materia h3,
+  .materia.destaque h3 {
+    font-size: 27px;
+  }
+
+  .materia-linha,
+  .materia-corpo {
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .boletim-status {
+    width: 100%;
+  }
+
+  .capa-admin {
+    justify-content: flex-start;
+  }
+}
