@@ -235,7 +235,61 @@ export default function BoletimPage() {
               <h3>{nomeProprio(jogo.jogo)}</h3>
 
               {abertoAgora ? (
-                <div className="materia-corpo">{vozDetalhe(jogo)}</div>
+                <div className="materia-corpo">
+                  {jogo.resumo && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Contexto</span>
+                      <p>{vozTexto(jogo.resumo)}</p>
+                    </div>
+                  )}
+
+                  {jogo.leitura && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Estatísticas e probabilidades</span>
+                      <p>{vozTexto(jogo.leitura)}</p>
+                    </div>
+                  )}
+
+                  {jogo.mercados?.length > 0 && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Possíveis mercados</span>
+                      <ul className="mercados-lista">
+                        {jogo.mercados.map((mercado, i) => (
+                          <li key={`${mercado}-${i}`}>{mercado}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {jogo.programa && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Programação</span>
+                      <p>{vozTexto(jogo.programa)}</p>
+                    </div>
+                  )}
+
+                  {jogo.jogosRelacionados?.length > 0 && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Jogos relacionados</span>
+                      <ul className="mercados-lista">
+                        {jogo.jogosRelacionados.map((partida, i) => (
+                          <li key={`${partida}-${i}`}>{partida}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {jogo.oQuePesa && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Observação</span>
+                      <p>{vozTexto(jogo.oQuePesa)}</p>
+                    </div>
+                  )}
+
+                  {!jogo.resumo && !jogo.leitura && !jogo.mercados?.length && !jogo.programa && !jogo.jogosRelacionados?.length && !jogo.oQuePesa && (
+                    <p>{vozDetalhe(jogo)}</p>
+                  )}
+                </div>
               ) : (
                 <p className="materia-linha">{vozMateria(jogo)}</p>
               )}
