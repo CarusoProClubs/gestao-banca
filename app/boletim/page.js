@@ -24,6 +24,26 @@ function mensagemErro(error, fallback) {
   return [error.message, error.hint, error.details].filter(Boolean).join(" · ") || fallback;
 }
 
+function rotuloEsporte(esporte) {
+  const mapa = {
+    futebol: "Futebol",
+    ufc: "UFC",
+    nascar: "NASCAR",
+    mlb: "MLB",
+    ncaa: "NCAA",
+    golfe: "Golfe",
+    afl: "AFL",
+    wnba: "WNBA",
+    nhl: "NHL",
+    motogp: "MotoGP",
+    tênis: "Tênis",
+    tenis: "Tênis",
+    nfl: "NFL",
+  };
+  const chave = String(esporte || "").toLowerCase();
+  return mapa[chave] || esporte;
+}
+
 export default function BoletimPage() {
   const hoje = dataLocal();
   const arquivoRef = useRef(null);
@@ -40,20 +60,6 @@ export default function BoletimPage() {
       if (!supabase) {
         setStatus("erro");
         setMsg("O Supabase não está configurado neste ambiente.");
-        return;
-      }
-
-      const { data: usuario, error: authError } = await supabase.auth.getUser();
-
-      if (authError) {
-        setStatus("erro");
-        setMsg(mensagemErro(authError, "Não foi possível validar seu acesso."));
-        return;
-      }
-
-      if (!usuario?.user) {
-        setStatus("login");
-        setMsg("Entre no seu perfil para carregar o boletim.");
         return;
       }
 
@@ -82,7 +88,7 @@ export default function BoletimPage() {
 
       setParsed(lido);
       setStatus(lido.jogos?.length ? "ok" : "vazio");
-      setMsg(lido.jogos?.length ? `${lido.jogos.length} jogos no ar.` : "O boletim existe, mas ainda não trouxe jogos.");
+      setMsg(lido.jogos?.length ? `${lido.jogos.length} eventos na edição.` : "O boletim existe, mas ainda não trouxe eventos.");
     } catch (error) {
       console.error("Erro ao carregar boletim:", error);
       setStatus("erro");
@@ -154,25 +160,22 @@ export default function BoletimPage() {
   }
 
   const destaques = parsed.jogos?.filter((j) => j.principal) || [];
+  const normalizarFiltro = (valor) => String(valor || "").trim().toLowerCase();
   const resumoDestaques = filtro === "principais"
     ? destaques
-    : destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase()).length
-      ? destaques.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase())
-      : destaques;
+    : destaques.filter((j) => normalizarFiltro(j.esporte) === normalizarFiltro(filtro));
 
   const materias = useMemo(() => {
     const jogos = parsed.jogos || [];
     if (filtro === "principais") return jogos.filter((j) => j.principal);
-    return jogos.filter((j) => String(j.esporte || "").toLowerCase() === filtro.toLowerCase());
+    return jogos.filter((j) => normalizarFiltro(j.esporte) === normalizarFiltro(filtro));
   }, [parsed, filtro]);
 
-  const vazioTexto = status === "login"
-    ? "Faça login para acessar a edição de hoje."
-    : status === "erro"
-      ? "O boletim não conseguiu ser carregado. Veja o aviso acima."
-      : status === "carregando"
-        ? "Carregando a edição de hoje..."
-        : "A redação ainda não fechou esta parte da edição.";
+  const vazioTexto = status === "erro"
+    ? "O boletim não conseguiu ser carregado. Veja o aviso acima."
+    : status === "carregando"
+      ? "Carregando a edição de hoje..."
+      : "A redação ainda não fechou esta parte da edição.";
 
   return (
     <section className="jornal">
@@ -181,20 +184,25 @@ export default function BoletimPage() {
         <h1>{parsed.manchete ? nomeProprio(parsed.manchete) : "Boletim do Dia"}</h1>
         {parsed.geral && <p className="capa-olho">{vozTexto(parsed.geral)}</p>}
 
-        <nav className="capa-abas" aria-label="Esportes da edição">
-          <button className={filtro === "principais" ? "active" : ""} onClick={() => { setFiltro("principais"); setAberto(null); }}>
+        <nav className="capa-abas" aria-label="Filtrar por esporte">
+          <button
+            className={filtro === "principais" ? "active" : ""}
+            onClick={() => { setFiltro("principais"); setAberto(null); }}
+          >
             Principais
           </button>
           {(parsed.esportes || []).map((esporte) => (
-            <button key={esporte} className={filtro.toLowerCase() === esporte.toLowerCase() ? "active" : ""} onClick={() => { setFiltro(esporte); setAberto(null); }}>
-              {esporte}
+            <button
+              key={esporte}
+              className={normalizarFiltro(filtro) === normalizarFiltro(esporte) ? "active" : ""}
+              onClick={() => { setFiltro(esporte); setAberto(null); }}
+            >
+              {rotuloEsporte(esporte)}
             </button>
           ))}
-        </nav>
-
-        <div className={`boletim-status ${status}`} aria-live="polite">
+        </nav>      <div className={`boletim-status ${status}`} aria-live="polite">
           <span>{msg || "Preparando a edição..."}</span>
-          {status === "erro" || status === "login" ? (
+          {status === "erro" ? (
             <button className="status-retry" onClick={load}>Tentar novamente</button>
           ) : null}
         </div>
@@ -202,7 +210,7 @@ export default function BoletimPage() {
         <p className="capa-admin">
           <input ref={arquivoRef} type="file" accept=".txt,text/plain" onChange={enviarTxt} style={{ display: "none" }} />
           <button className="green" onClick={() => arquivoRef.current?.click()} disabled={status === "salvando"}>
-            {status === "salvando" ? "Publicando..." : "Enviar boletim TXT"}
+            {status === "salvando" ? "Publicando..." : "Atualizar boletim TXT"}
           </button>
         </p>
       </header>
