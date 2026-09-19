@@ -238,7 +238,7 @@ export default function BoletimPage() {
                     <div className={`entrada-valor ${entrada.valor.forte ? "forte" : "moderada"}`} key={`${entrada.mercado}-${i}`}>
                       <span className="entrada-selo">VALOR POTENCIAL</span>
                       <strong>{entrada.mercado || "Entrada no radar"}</strong>
-                      <span className="entrada-dados">Odd {entrada.odd.toFixed(2)} · estimativa {entrada.probabilidade}% · margem +{entrada.valor.valor.toFixed(1)} p.p.</span>
+                      <span className="entrada-dados">Odd {Number(entrada.odd).toFixed(2)} · estimativa {entrada.probabilidade}% · margem +{entrada.valor.valor.toFixed(1)} p.p.</span>
                     </div>
                   ))}
                 </div>
