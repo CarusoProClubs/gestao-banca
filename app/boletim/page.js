@@ -250,6 +250,40 @@ export default function BoletimPage() {
                     </div>
                   )}
 
+                  {(jogo.forma || jogo.h2h || jogo.desfalques || jogo.escalacoes || jogo.clima || jogo.tendencia || jogo.placarProjetado || jogo.totalProjetado || jogo.linhasMercado?.length) && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Dados da análise</span>
+                      {jogo.forma && <p><strong>Forma:</strong> {vozTexto(jogo.forma)}</p>}
+                      {jogo.h2h && <p><strong>H2H:</strong> {vozTexto(jogo.h2h)}</p>}
+                      {jogo.desfalques && <p><strong>Desfalques:</strong> {vozTexto(jogo.desfalques)}</p>}
+                      {jogo.escalacoes && <p><strong>Escalações:</strong> {vozTexto(jogo.escalacoes)}</p>}
+                      {jogo.clima && <p><strong>Clima:</strong> {vozTexto(jogo.clima)}</p>}
+                      {jogo.tendencia && <p><strong>Tendência:</strong> {vozTexto(jogo.tendencia)}</p>}
+                      {jogo.placarProjetado && <p><strong>Placar projetado:</strong> {jogo.placarProjetado}</p>}
+                      {jogo.totalProjetado && <p><strong>Total projetado:</strong> {jogo.totalProjetado}</p>}
+                      {jogo.linhasMercado?.length > 0 && (
+                        <ul className="mercados-lista">
+                          {jogo.linhasMercado.map((linha, i) => <li key={i}>{linha}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {jogo.entradas?.length > 0 && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Probabilidades e odds</span>
+                      <ul className="mercados-lista">
+                        {jogo.entradas.map((entrada, i) => (
+                          <li key={i}>
+                            <strong>{entrada.mercado || "Mercado"}</strong>
+                            {entrada.odd ? ` · Odd ${Number(entrada.odd).toFixed(2)}` : ""}
+                            {entrada.probabilidade ? ` · ${entrada.probabilidade}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {jogo.mercados?.length > 0 && (
                     <div className="detalhe-bloco">
                       <span className="detalhe-titulo">Possíveis mercados</span>
