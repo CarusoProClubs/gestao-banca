@@ -327,6 +327,15 @@ export default function BoletimPage() {
                     </div>
                   )}
 
+                  {jogo.extraCampos && Object.keys(jogo.extraCampos).length > 0 && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Informações adicionais</span>
+                      {Object.entries(jogo.extraCampos).map(([chave, valor]) => (
+                        <p key={chave}><strong>{String(chave).replace(/_/g, " ")}:</strong> {vozTexto(String(valor || ""))}</p>
+                      ))}
+                    </div>
+                  )}
+
                   {jogo.oQuePesa && (
                     <div className="detalhe-bloco">
                       <span className="detalhe-titulo">Observação</span>
