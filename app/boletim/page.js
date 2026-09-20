@@ -269,6 +269,20 @@ export default function BoletimPage() {
                     </div>
                   )}
 
+                  {jogo.probabilidade && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Probabilidade estimada</span>
+                      <p>{vozTexto(jogo.probabilidade)}</p>
+                    </div>
+                  )}
+
+                  {jogo.odd && (
+                    <div className="detalhe-bloco">
+                      <span className="detalhe-titulo">Odd informada</span>
+                      <p>{jogo.odd}</p>
+                    </div>
+                  )}
+
                   {jogo.entradas?.length > 0 && (
                     <div className="detalhe-bloco">
                       <span className="detalhe-titulo">Probabilidades e odds</span>
