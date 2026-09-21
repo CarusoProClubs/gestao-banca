@@ -5,6 +5,7 @@ import { getSupabase } from "../../lib/supabase";
 import { inicioSemana } from "../../lib/alavancagem";
 import { parseAlavancagemTxt } from "../../lib/alavancagem-txt";
 import { resultadoNivel } from "../../lib/alavancagem-resultado";
+import { estatisticasSemana, resumoSemana } from "../../lib/alavancagem-estatisticas";
 import { rotuloMercado } from "../../lib/mercado-texto";
 
 function money(value) {
@@ -55,6 +56,7 @@ export default function AlavancagemPage() {
   const [metaId, setMetaId] = useState(null);
   const [brutoTxt, setBrutoTxt] = useState("");
   const [msg, setMsg] = useState("");
+  const [historico, setHistorico] = useState([]);
 
   async function load() {
     const supabase = getSupabase();
@@ -64,6 +66,8 @@ export default function AlavancagemPage() {
       const { data: profile } = await supabase.from("profiles").select("role").eq("id", userData.user.id).single();
       setAdmin(profile?.role === "admin");
     }
+    const { data: historicoRows } = await supabase.from("alavancagem_txt").select("inicio,parsed").order("inicio", { ascending: true });
+    setHistorico(historicoRows || []);
     const { data: txtRows } = await supabase.from("alavancagem_txt").select("*").eq("inicio", semana).limit(1);
     if (txtRows?.[0]) {
       const lido = parseAlavancagemTxt(txtRows[0].bruto || "");
@@ -90,6 +94,8 @@ export default function AlavancagemPage() {
     return saida;
   }, [estado, parsed, resultados]);
 
+  const estatisticas = estatisticasSemana(parsed, resultados);
+  const resumo = resumoSemana(parsed, resultados);
   const ativos = Object.keys(ROTULOS).filter((id) => estado[id].ativo);
   const investido = ativos.reduce((acc, id) => acc + Number(estado[id].valor || 0), 0);
   const banca = ativos.reduce((acc, id) => acc + contas[id].banca, 0);
@@ -243,7 +249,7 @@ export default function AlavancagemPage() {
                     <button className="red" onClick={() => marcar(aberto, jogo.index, "red")}>🔴 Red</button>
                   </p>
                 )}
-                {admin && jogo.status !== "pendente" && jogo.status !== "fechado" && (
+                {admin && jogo.status !== "pendente" && (
                   <p>
                     <button className={jogo.status === "green" ? "green" : "red"} onClick={() => marcar(aberto, jogo.index, jogo.status)}>
                       {jogo.status === "green" ? "🟢 Green" : "🔴 Red"}
@@ -256,9 +262,52 @@ export default function AlavancagemPage() {
         </section>
       )}
 
+
+      <section className="card">
+        <h2>Desempenho da semana</h2>
+        <div className="grid">
+          {Object.entries(ROTULOS).map(([id, nome]) => {
+            const s = estatisticas[id];
+            return (
+              <article className="card" key={id}>
+                <h3>{nome}</h3>
+                <strong>{s.aproveitamento.toFixed(1)}% de acerto</strong>
+                <p>🟢 {s.greens} Green · 🔴 {s.reds} Red · ⏳ {s.pendentes} pendente(s)</p>
+                <p>Maior sequência Green: {s.maiorGreen} · Red: {s.maiorRed}</p>
+                <p>{s.sequenciaAtual ? `Sequência atual: ${s.sequenciaAtual} ${s.sequenciaAtualTipo === "green" ? "Green" : "Red"}` : "Sequência atual: —"}</p>
+              </article>
+            );
+          })}
+        </div>
+        <p><strong>Total:</strong> {resumo.greens} Green · {resumo.reds} Red · {resumo.pendentes} pendente(s) · {(resumo.greens + resumo.reds) ? ((resumo.greens / (resumo.greens + resumo.reds)) * 100).toFixed(1) : "0.0"}% de acerto</p>
+      </section>
+
+      <section className="card">
+        <h2>Histórico das semanas</h2>
+        {historico.length === 0 && <p className="muted">Ainda não há semanas registradas.</p>}
+        {[...historico].reverse().map((item, reverseIndex) => {
+          const index = historico.length - reverseIndex;
+          const parsedSemana = item.parsed || {};
+          const resultadosSemana = parsedSemana.resultados || RESULTADO_VAZIO;
+          const resumoHistorico = resumoSemana(parsedSemana, resultadosSemana);
+          const inicio = new Date(`${item.inicio}T12:00:00`);
+          const fim = new Date(inicio);
+          fim.setDate(fim.getDate() + 6);
+          const formatar = (date) => date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+          const status = item.inicio === semana ? "Em andamento" : item.inicio < semana ? "Finalizada" : "Programada";
+          const aproveitamento = (resumoHistorico.greens + resumoHistorico.reds) ? (resumoHistorico.greens / (resumoHistorico.greens + resumoHistorico.reds)) * 100 : 0;
+          return (
+            <div className="leg" key={item.inicio}>
+              <strong>Semana {String(index).padStart(2, "0")} · {formatar(inicio)}–{formatar(fim)}</strong>
+              <p className="muted">{status} · {resumoHistorico.total} seleções · 🟢 {resumoHistorico.greens} · 🔴 {resumoHistorico.reds} · ⏳ {resumoHistorico.pendentes}</p>
+              <p><strong>{aproveitamento.toFixed(1)}% de acerto</strong></p>
+            </div>
+          );
+        })}
+      </section>
       <div className="grid">
         <article className="card">
-          <h2>Investido na semana</h2>
+          <h2>Investido na semana</h2
           <strong>{money(investido)}</strong>
           <p>Soma dos seus níveis</p>
         </article>
