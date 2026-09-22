@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import styles from './page.module.css';
 
 const TELEGRAM_URL = 'https://t.me/+Mp6mHMTZnOpiMjYx';
 
@@ -10,204 +11,28 @@ export default function AcessoPage() {
   }, []);
 
   return (
-    <main className="landing">
-      <div className="ambient ambientOne" />
-      <div className="ambient ambientTwo" />
-
-      <section className="card" aria-label="Conteúdo exclusivo">
-        <div className="badge">18+ • CONTEÚDO EXCLUSIVO</div>
-
-        <div className="monogram" aria-hidden="true">✦</div>
-
-        <p className="eyebrow">SÓ PARA QUEM SABE APRECIAR</p>
-
-        <h1>
+    <main className={styles.landing}>
+      <div className={`${styles.ambient} ${styles.ambientOne}`} />
+      <div className={`${styles.ambient} ${styles.ambientTwo}`} />
+      <section className={styles.card} aria-label="Conteúdo exclusivo">
+        <div className={styles.badge}>18+ • CONTEÚDO EXCLUSIVO</div>
+        <div className={styles.monogram} aria-hidden="true">✦</div>
+        <p className={styles.eyebrow}>SÓ PARA QUEM SABE APRECIAR</p>
+        <h1 className={styles.title}>
           Meus melhores ângulos…
           <span>só pra você.</span>
         </h1>
-
-        <p className="description">
+        <p className={styles.description}>
           Um cantinho reservado, íntimo e feito para despertar sua curiosidade.
           O que acontece lá dentro fica entre nós. 👀
         </p>
-
-        <a
-          className="cta"
-          href={TELEGRAM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a className={styles.cta} href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer">
           <span>Acessar conteúdo exclusivo</span>
-          <span className="ctaEmoji" aria-hidden="true">🔥</span>
+          <span className={styles.ctaEmoji} aria-hidden="true">🔥</span>
         </a>
-
-        <p className="privacy">Clique no botão para continuar pelo Telegram</p>
+        <p className={styles.privacy}>Clique no botão para continuar pelo Telegram</p>
       </section>
-
-      <footer>© {new Date().getFullYear()} • Conteúdo para maiores de 18 anos</footer>
-
-      <style jsx>{`
-        .landing {
-          min-height: 100svh;
-          position: relative;
-          overflow: hidden;
-          display: grid;
-          place-items: center;
-          padding: 24px;
-          color: #f7f4f2;
-          background:
-            radial-gradient(circle at 50% 35%, rgba(115, 38, 66, .24), transparent 35%),
-            radial-gradient(circle at 15% 85%, rgba(91, 32, 61, .16), transparent 30%),
-            #090708;
-          font-family: Arial, Helvetica, sans-serif;
-        }
-
-        .card {
-          width: min(100%, 560px);
-          position: relative;
-          z-index: 2;
-          text-align: center;
-          padding: clamp(38px, 8vw, 68px) clamp(24px, 7vw, 58px);
-          border: 1px solid rgba(255,255,255,.10);
-          border-radius: 28px;
-          background: rgba(20, 16, 18, .72);
-          box-shadow: 0 30px 100px rgba(0,0,0,.58), inset 0 1px rgba(255,255,255,.05);
-          backdrop-filter: blur(18px);
-        }
-
-        .badge {
-          display: inline-flex;
-          padding: 7px 12px;
-          border: 1px solid rgba(255,255,255,.12);
-          border-radius: 999px;
-          color: rgba(255,255,255,.64);
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: .18em;
-        }
-
-        .monogram {
-          width: 58px;
-          height: 58px;
-          margin: 28px auto 22px;
-          display: grid;
-          place-items: center;
-          border-radius: 50%;
-          color: #f2c6d6;
-          border: 1px solid rgba(242,198,214,.32);
-          background: rgba(120, 47, 76, .18);
-          font-size: 23px;
-          box-shadow: 0 0 40px rgba(143, 50, 89, .22);
-        }
-
-        .eyebrow {
-          margin: 0 0 14px;
-          color: #d6a9ba;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .24em;
-        }
-
-        h1 {
-          margin: 0;
-          font-family: Georgia, 'Times New Roman', serif;
-          font-size: clamp(36px, 8vw, 62px);
-          font-weight: 400;
-          line-height: .98;
-          letter-spacing: -.035em;
-        }
-
-        h1 span {
-          display: block;
-          margin-top: 7px;
-          color: #f0bfd1;
-          font-style: italic;
-        }
-
-        .description {
-          max-width: 420px;
-          margin: 24px auto 30px;
-          color: rgba(255,255,255,.66);
-          font-size: 15px;
-          line-height: 1.65;
-        }
-
-        .cta {
-          min-height: 58px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          width: 100%;
-          padding: 0 22px;
-          border-radius: 15px;
-          color: #160c10;
-          background: linear-gradient(135deg, #f4c8d8, #d991ad);
-          font-size: 15px;
-          font-weight: 800;
-          text-decoration: none;
-          box-shadow: 0 14px 34px rgba(196, 102, 139, .22);
-          transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-        }
-
-        .cta:hover {
-          transform: translateY(-2px);
-          filter: brightness(1.05);
-          box-shadow: 0 18px 42px rgba(196, 102, 139, .30);
-        }
-
-        .cta:active {
-          transform: translateY(0);
-        }
-
-        .ctaEmoji {
-          font-size: 18px;
-        }
-
-        .privacy {
-          margin: 16px 0 0;
-          color: rgba(255,255,255,.38);
-          font-size: 11px;
-        }
-
-        footer {
-          position: absolute;
-          z-index: 2;
-          bottom: 16px;
-          color: rgba(255,255,255,.28);
-          font-size: 10px;
-          letter-spacing: .08em;
-          text-align: center;
-        }
-
-        .ambient {
-          position: absolute;
-          z-index: 0;
-          width: 360px;
-          height: 360px;
-          border-radius: 50%;
-          filter: blur(90px);
-          opacity: .18;
-        }
-
-        .ambientOne {
-          top: -180px;
-          right: -130px;
-          background: #a53f6d;
-        }
-
-        .ambientTwo {
-          bottom: -220px;
-          left: -160px;
-          background: #5d2949;
-        }
-
-        @media (max-width: 520px) {
-          .landing { padding: 16px; }
-          .card { border-radius: 22px; }
-          footer { position: relative; margin-top: 18px; bottom: auto; }
-        }
-      `}</style>
+      <footer className={styles.footer}>© 2026 • Conteúdo para maiores de 18 anos</footer>
     </main>
   );
 }
